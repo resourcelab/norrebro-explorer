@@ -6,11 +6,38 @@ pieces fold up from a printed ground, seen through a tilt-shift lens. Walk the p
 round the walls: Nørrebrogade, Jagtvej, Kapelvej, Hans Tavsens Park and the playgrounds, with a street sign naming the
 street you are on.
 
+- **Play it online:** [resourcelab.github.io/norrebro-explorer/](https://resourcelab.github.io/norrebro-explorer/), published from `main`.
 - **Open it:** double-click `dist/assistens-kirkegaard-paper-walk.html` (one self-contained file, works offline).
-- **Controls:** arrows / WASD walk · drag to look around · click to fold the world flat and back up.
-- **URL options:** `?mood=dusk` or `?mood=night` · `?capture` hides the overlays (for screenshots).
+- **Controls:** arrows / WASD walk · Shift run · Z (or the button) switches between the walking view and the map
+  view · click the minimap to switch too · drag to look around · click the scene to fold the world flat and back up.
+- **URL options:** `?mood=dusk` or `?mood=night` · `?zoom=map` opens on the map view · `?capture` hides the overlays
+  (for screenshots; `?capture&hud` keeps them).
 
-Status: v0.2, 2026-11-24. The first slice of [Nørrebro Explorer](../../README.md).
+## Finding your way
+
+The settings live in `src/config.js` (`TOY`, `WALK`, `ZOOMS`, `STREAM`), so they are easy to tune.
+
+- **True layout, quicker legs:** every street, block and path is where it really is (1 unit = 5 m). Walking is
+  1.25 units/s (≈ 6 m/s), so crossing a 300 m chunk takes about a minute; Shift runs 2.2× faster.
+- **Toy scale:** buildings are true height (3 m storeys), streets are drawn 1.4× wider than mapped, landmarks 1.3×
+  taller than life. People, trees and street furniture are larger than life (a real person would be a speck) but stay
+  smaller than the buildings round them.
+- **Landmarks:** four churches (Hellig Kors, Simeons, Brorsons, Anna) stand on their real footprints with a green copper
+  spire, and flags mark Nørrebros Runddel, Folkets Park and Hans Tavsens Park. They stand whatever the distance. The
+  towers' exact spot and height are generic, not surveyed. Fingerposts point to the lakes and Superkilen, beyond the
+  walkable area, with the distance.
+- **Street names:** printed along every named street (repeated along long ones), on corner signs where named streets
+  meet, and on the sign in the bottom-left corner for the street you are on.
+- **Minimap** (bottom right): north up, about 600 m across, "you are here" arrow, home (for now the start; later the
+  player's address), landmarks, arrows on the rim to the lakes and Superkilen, the edge of the walkable area dashed,
+  and a compass (N Ø S V) turned the way the 3D view is turned.
+- **Two zooms:** close for walking (46 units back, 55° down) and a map view (~400 m across, 72° down, less blur).
+- **Near stands up, far lies flat:** pieces within 300 m of the walker stand; further ones fold flat and are hidden,
+  and the ground shows them printed (roofs, streets, parks). Blocks are built the first time you come near, a few per
+  frame, so the load stays quick and walking never stutters. Beyond the walkable area, a veiled ring of context
+  (streets, roofs, the lakes) is printed so the map view never ends in bare paper.
+
+Status: v0.3 (wayfinding and scale), 2026-11-25. The first slice of [Nørrebro Explorer](../../README.md).
 
 ![Nørrebrogade side](docs/2026-11-24-norrebrogade-side.png)
 ![Hans Tavsens Park](docs/2026-11-24-hans-tavsens-park.png)
@@ -43,7 +70,7 @@ has everything inlined and needs neither.
    playground kit, the walker.
 5. **Walking rules** (`src/map/walk.js`): buildings, water and walls block; gates and path openings let you through.
 6. **Life and traffic** (`src/world/life.js`, `traffic.js`): falling leaves, crows, squirrels, cyclists.
-7. **Overlays** (`src/ui/`): the grave label and the street sign.
+7. **Overlays** (`src/ui/`): the place label, the street sign, the minimap with its compass, the zoom button.
 
 ```
 src/
@@ -52,39 +79,48 @@ src/
 ├── config.js                scale (1 unit = 5 m), palette, camera, walker start, the paper spec
 ├── data/                    no logic
 │   ├── assistens-osm.js     the cemetery from OpenStreetMap: outline, paths, walls, gates, trees, benches, graves
-│   ├── surroundings.js      streets, blocks, parks, playgrounds, trees round the walls (generated)
+│   ├── surroundings.js      streets, blocks, parks, playgrounds, trees round the walls + a flat context ring (generated)
+│   ├── landmarks.js         churches, flags and far places to steer by
 │   └── notable-graves.js    who rests where (label text)
 ├── map/                     the map in world units; no randomness
 │   ├── math.js              geometry helpers (points, polygons, polylines, hull)
 │   ├── units.js             metres → world units
 │   ├── cemetery.js          outline, paths, walls and their openings, gates, chapel, sheds
-│   ├── neighbourhood.js     play region, streets, areas, buildings, "which building is here?"
+│   ├── neighbourhood.js     play region, streets, areas, buildings, "which building is here?", context ring, sheet
+│   ├── landmarks.js         landmarks in world units (church towers, far places)
 │   └── walk.js              where the walker may go
 ├── plan/                    where every piece stands (positions only)
 │   ├── index.js             planWorld(): runs the steps in a fixed order
 │   ├── keep-out.js          "keep clear" zones
 │   ├── cemetery.js          notable graves, trees, grave plots, benches, lamps
-│   └── neighbourhood.js     street trees, playground kit, bike racks, benches, cycle routes
+│   └── neighbourhood.js     street trees, playground kit, bike racks, benches, cycle routes, corner signs, fingerposts
 ├── pieces/                  how each kind of paper piece looks
 │   ├── trees.js  graves.js  walls.js  chapel.js  props.js  critters.js  walker.js
 │   ├── buildings.js         apartment blocks folded on their footprints
 │   ├── playground.js        swings, slide, climbing dome, seesaw
-│   └── street.js            bike rack, cyclists
+│   ├── street.js            bike rack, cyclists
+│   ├── landmarks.js         church with spire, flag, fingerpost
+│   ├── signs.js             corner street sign
+│   └── lettering.js         text on paper pieces
 ├── world/                   puts it together
 │   ├── ground.js            the printed ground (calls the two layers below)
 │   ├── ground-neighbourhood.js, ground-cemetery.js
 │   ├── build.js             the standing pieces (calls the two halves below, then adds the walker)
-│   ├── build-cemetery.js, build-neighbourhood.js
-│   ├── popup.js             places a card on its hinge, facing the walking camera
+│   ├── build-cemetery.js, build-neighbourhood.js, build-wayfinding.js
+│   ├── popup.js             places a card on its hinge, facing the walking camera; hands it to the stream
+│   ├── stream.js            near stands up, far lies flat; builds pieces when first needed
 │   ├── life.js              leaves, crows, squirrels, cloud shadows
 │   └── traffic.js           cyclists riding the streets
 └── ui/
     ├── overlay.js           shared overlay helpers
-    ├── grave-labels.js      "who rests here"
-    └── street-sign.js       the street-name sign
+    ├── place-labels.js      "who rests here" / the landmark you are at
+    ├── street-sign.js       the street-name sign
+    ├── minimap.js           minimap, home marker, compass
+    └── zoom.js              walking view / map view
 tests/map.test.mjs           geometry, gates, buildings, reachability
+tests/wayfinding.test.mjs    landmarks, signs, fingerposts, the near/far stream
 tools/                       extract-surroundings.py, capture.py
-vendor/papercraft/           the papercraft kit (MIT, see its README; one local fix)
+vendor/papercraft/           the papercraft kit (MIT, see its README for the local changes)
 scripts/build.mjs            esbuild bundle → dist/
 ```
 
@@ -97,8 +133,8 @@ scripts/build.mjs            esbuild bundle → dist/
 - Compressed: 1 world unit = 5 m; paths are drawn wider than life so the toy-scale walker fits.
 - The chapel is a generic Danish chapel, not a likeness.
 - Round the walls (about 860 × 870 m): every street, building footprint, park, pitch and playground from OpenStreetMap.
-  Blocks within ~55 m of the wall stand up on their real footprints (courtyards are filled in; height from the mapped
-  storeys, else 5–6); those further out are printed flat as roofs. Facades, colours and playground equipment are generic.
+  Blocks stand up on their real footprints when you are near (courtyards are filled in; height from the mapped storeys,
+  else 5–6). Facades, colours and playground equipment are generic.
 
 ## Credits
 

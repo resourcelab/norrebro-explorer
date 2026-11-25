@@ -13,8 +13,8 @@
 import { printNeighbourhoodGround } from './ground-neighbourhood.js';
 import { printCemeteryGround } from './ground-cemetery.js';
 
-/** Ground print resolution: pixels per world unit. 16 keeps the ~180 × 180-unit sheet near 2900 px (GPU texture limits). */
-const PIXELS_PER_UNIT = 16;
+/** Ground print resolution: pixels per world unit. 14 keeps the ~240 × 255-unit sheet under 3600 px (GPU texture limits). */
+const PIXELS_PER_UNIT = 14;
 
 export function printGround(H, plan) {
   H.printGround((k) => {

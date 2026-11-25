@@ -13,3 +13,9 @@ Plumbing from the papercraft agent skill, copied in so the project builds withou
 
 Local change: `lib/paperkit-3d.js`, depth-of-field shader — skips NaN pixels so a degenerate sliver can't bloom into a
 white disc in the blur (two lines, marked with a comment).
+
+Local change: `harness.js`, marked `local change` (norrebro-explorer, 2026-11-25):
+- `createHarness({ walkSpeed, runFactor })`: walking speed in units per second (default as before, 1.9 × hero height),
+  and Shift runs `runFactor` times faster.
+- `view.pitchMin` / `view.pitchMax`: the drag-to-look pitch range can change at runtime (the map view looks steeper).
+- `H.post`: the lens (`PaperPost`) is reachable once started, so the map view can retune haze and blur.

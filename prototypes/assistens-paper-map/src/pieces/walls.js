@@ -66,10 +66,10 @@ export function placeRun(H, popup, [[ax, az], [bx, bz]], { h, t, wall, lid }) {
 }
 
 /** A square gate pillar with a pyramid cap. */
-export function gatePost(H, popup, x, z) {
+export function gatePost(H, popup, x, z, scale = 1) {
   const node = prismFold([[-0.32, 0.32], [0.32, 0.32], [0.32, -0.32], [-0.32, -0.32]], {
     h: 1.9, roof: 'pyramid', roofH: 0.45, paints: { wall: wallPaint, roof: lidPaint(C.coping) }, paper: H.paper, seed: 90,
     print: H.cardOpts(x, z),
   });
-  return popup(null, null, { node, height: 2.4, x, z, yaw: 0.3, level: true, solid: 0.5 });
+  return popup(null, null, { node, height: 2.4, x, z, yaw: 0.3, level: true, solid: 0.5, scale });
 }

@@ -56,7 +56,8 @@ export const MOODS = {
  * limbs there. turn: 'yaw' (default) or 'flip' (a flat card that mirrors to face left / right: critters, extras).
  */
 export function createHarness({ bounds = { x0: -64, x1: 64, z0: -62, z1: 38 }, ground = '#d9d2c2', view: view0 = {}, testView = { dist: 38, target: [3, 1.5, -6] },
-  heroHeight = 3.6, light = {}, lens = {}, walk: walkOpts = { step: 0.75, radius: 0.6 }, moods = MOODS, play = false, focus = null, mood = null, stock = '#f7f0e2', walkArea = null, camBox = null } = {}) {
+  heroHeight = 3.6, light = {}, lens = {}, walk: walkOpts = { step: 0.75, radius: 0.6 }, moods = MOODS, play = false, focus = null, mood = null, stock = '#f7f0e2', walkArea = null, camBox = null,
+  walkSpeed = null, runFactor = 1 } = {}) {   // local change (norrebro-explorer): walkSpeed in units/s, Shift runs runFactor x faster
   const T0 = performance.now();
   // print costs by the scene line that asked for them: __papercraft.printStats() (and a console line when the build is
   // slow) says which pieces to print smaller (popup res), share (one print, many cards) or cut
@@ -355,7 +356,8 @@ export function createHarness({ bounds = { x0: -64, x1: 64, z0: -62, z1: 38 }, g
     const lights = paperLights(scene, L);
     PAPER_LIGHT.leak.value.set(L.leak);      // the world's shadow colour (light.leak), more saturated than the ground, never grey (default: a warm ground's day amber; other light: assets/lights.json)
     enableSoftShadows(lights.key, { softness: L.softness, maxPenumbra: L.maxPenumbra });
-    const post = new PaperPost(renderer, scene, camera, { haze: '#d8bf8e', hazeStart: 34, hazeEnd: 95, hazeAmount: 0.3, focusBand: 0.3, ramp: 0.3, maxBlur: 18,
+    const post = H.post = new PaperPost(renderer, scene, camera, {   // H.post: local change (zoom levels retune the lens)
+      haze: '#d8bf8e', hazeStart: 34, hazeEnd: 95, hazeAmount: 0.3, focusBand: 0.3, ramp: 0.3, maxBlur: 18,
       tint: [1.03, 0.985, 0.98], saturation: 0.96, greenDesat: 0.3, exposure: 0.82, contrast: 1.18, vignette: 0.03, ...lens });
     const M = moods[flags.MOOD];
     if (M) {
@@ -390,7 +392,7 @@ export function createHarness({ bounds = { x0: -64, x1: 64, z0: -62, z1: 38 }, g
       if (!drag) return;
       drag.moved += Math.abs(e.movementX) + Math.abs(e.movementY);
       view.tyaw = THREE.MathUtils.clamp(view.tyaw - e.movementX * 0.15, -12, 12);      // the world is filled where the camera
-      view.tpitch = THREE.MathUtils.clamp(view.tpitch + e.movementY * 0.12, 40, 55);  // looks; never so low the far edge shows
+      view.tpitch = THREE.MathUtils.clamp(view.tpitch + e.movementY * 0.12, view.pitchMin ?? 40, view.pitchMax ?? 55);  // looks; never so low the far edge shows (local change: range on view)
     });
     addEventListener('pointerup', () => { if (drag && drag.moved < 6) setOpen(!up); drag = null; });
 
@@ -401,7 +403,8 @@ export function createHarness({ bounds = { x0: -64, x1: 64, z0: -62, z1: 38 }, g
     const KEYS = { KeyW: [0, -1], ArrowUp: [0, -1], KeyS: [0, 1], ArrowDown: [0, 1], KeyA: [-1, 0], ArrowLeft: [-1, 0], KeyD: [1, 0], ArrowRight: [1, 0] };
     const keys = new Set(), heroPos = new THREE.Vector3(), camOff = new THREE.Vector3(), shadowAt = new THREE.Vector3().copy(target);
     const HERO0 = new THREE.Vector3(), TARGET0 = new THREE.Vector3().copy(target), FO = FOLLOW;
-    const SPEED = 1.9 * heroHeight, ACCEL = 28 * heroHeight, TURN = 13, LEAN = 3.5 * Math.PI / 180, LEAN_W = 2 * Math.PI * 3.4, LEAN_Z = 0.75, ROLL = 4 * Math.PI / 180;
+    const SPEED0 = walkSpeed ?? 1.9 * heroHeight; let SPEED = SPEED0, running = false;   // local change: walkSpeed, running
+    const ACCEL = 28 * heroHeight, TURN = 13, LEAN = 3.5 * Math.PI / 180, LEAN_W = 2 * Math.PI * 3.4, LEAN_Z = 0.75, ROLL = 4 * Math.PI / 180;
     let facing = 1, moved = false;   // moved: the hero has walked (keys or walkPath): the camera follows, the lens too
     let walked = 0, gait = 0;        // the distance walked and how much he is walking (0 standing .. 1 striding)
     let heading = 0, heading0 = 0, yawRate = 0, lean = 0, leanV = 0; const vel = new THREE.Vector3();
@@ -410,8 +413,8 @@ export function createHarness({ bounds = { x0: -64, x1: 64, z0: -62, z1: 38 }, g
     if (flags.WALK) {
       // physical keys (e.code: any layout, caps lock or shift), no modifier chords, all released when the page loses
       // focus (a key let go in another window never sticks)
-      addEventListener('keydown', (e) => { if (!KEYS[e.code] || e.metaKey || e.ctrlKey || e.altKey) return; keys.add(e.code); e.preventDefault(); });
-      addEventListener('keyup', (e) => keys.delete(e.code));
+      addEventListener('keydown', (e) => { running = e.shiftKey; if (!KEYS[e.code] || e.metaKey || e.ctrlKey || e.altKey) return; keys.add(e.code); e.preventDefault(); });
+      addEventListener('keyup', (e) => { running = e.shiftKey; keys.delete(e.code); });
       addEventListener('blur', () => keys.clear());
       document.addEventListener('visibilitychange', () => { if (document.hidden) keys.clear(); });
     }
@@ -545,6 +548,7 @@ export function createHarness({ bounds = { x0: -64, x1: 64, z0: -62, z1: 38 }, g
       if (node) { node.rotation.x = lean; node.rotation.z = -Math.max(-ROLL, Math.min(ROLL, 0.035 * yawRate)); }
     };
     function walkStep(dt) {
+      SPEED = SPEED0 * (running ? runFactor : 1);
       let ix = 0, iz = 0;
       for (const c of keys) { ix += KEYS[c][0]; iz += KEYS[c][1]; }
       const il = Math.hypot(ix, iz), wx = il ? ix / il : 0, wz = il ? iz / il : 0;

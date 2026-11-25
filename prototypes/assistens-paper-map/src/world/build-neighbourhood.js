@@ -2,6 +2,7 @@
  * Builds the neighbourhood round the walls from the plan: apartment blocks on their real footprints, street trees,
  * playground equipment, bike racks, pavement benches and the cyclists.
  */
+import { TOY } from '../config.js';
 import { BUILDINGS } from '../map/neighbourhood.js';
 import { polylineLengths } from '../map/math.js';
 import { VARIANTS_PER_KIND } from '../pieces/trees.js';
@@ -23,19 +24,32 @@ export function buildNeighbourhood(H, popup, plan, { treeVariant, props }) {
   const { rnd } = plan;
   const between = (a, b) => a + rnd() * (b - a);
 
-  for (const b of BUILDINGS) if (b.raised) apartmentBlock(H, popup, b);
+  // everything out here is built the first time the walker comes near (popup.lazy), so the load stays quick;
+  // choices that use the plan's random stream are made now, so the neighbourhood is the same on every visit
+  for (const b of BUILDINGS) {
+    if (!b.raised) continue;
+    const [x0, z0, x1, z1] = b.box;
+    popup.lazy((x0 + x1) / 2, (z0 + z1) / 2, () => apartmentBlock(H, popup, b), { node: true });
+  }
 
   for (const t of plan.streetTrees) {
     const v = treeVariant(t.kind, Math.floor(rnd() * VARIANTS_PER_KIND));
-    popup(v.pts, null, { x: t.x, z: t.z, cross: true, materials: v.mat, sway: 0.5, scale: between(0.85, 1.05), solid: 0.35 });
+    const scale = TOY.tree * between(0.85, 1.05);
+    popup.lazy(t.x, t.z, () => popup(v.pts, null, { x: t.x, z: t.z, cross: true, materials: v.mat, sway: 0.5, scale, solid: 0.35 }));
   }
 
   const kit = Object.fromEntries(Object.entries(PLAYGROUND).map(([kind, make]) => [kind, printOnce(H, make())]));
-  for (const e of plan.playgroundKit) popup(kit[e.kind].pts, null, { x: e.x, z: e.z, materials: kit[e.kind].mat, scale: 1.25, solid: 1.0 });
+  for (const e of plan.playgroundKit) {
+    popup.lazy(e.x, e.z, () => popup(kit[e.kind].pts, null, { x: e.x, z: e.z, materials: kit[e.kind].mat, scale: TOY.playground, solid: 1.0 }));
+  }
 
   const rack = printOnce(H, bikeRack());
-  for (const [x, z] of plan.racks) popup(rack.pts, null, { x, z, materials: rack.mat, scale: 1.1, solid: 0.6 });
-  for (const [x, z] of plan.streetBenches) popup(props.bench.pts, null, { x, z, materials: props.bench.mat, solid: 0.5 });
+  for (const [x, z] of plan.racks) {
+    popup.lazy(x, z, () => popup(rack.pts, null, { x, z, materials: rack.mat, scale: TOY.prop, solid: 0.6 }));
+  }
+  for (const [x, z] of plan.streetBenches) {
+    popup.lazy(x, z, () => popup(props.bench.pts, null, { x, z, materials: props.bench.mat, scale: TOY.prop, solid: 0.5 }));
+  }
 
   return buildRiders(H, popup, plan);
 }
@@ -56,7 +70,7 @@ function buildRiders(H, popup, plan) {
     if (total < 1) return;
     const [x, z] = route.pts[0];
     riders.push({
-      hinge: popup(pts, null, { x, z, materials: mat, scale: 1.25 }),
+      hinge: popup(pts, null, { x, z, materials: mat, scale: TOY.cyclist, stream: false }),
       route: route.pts, lengths, total,
       s: rnd() * Math.min(10, total), dir: k % 4 ? 1 : -1, speed: 3.2 + rnd() * 1.6,
     });

@@ -4,10 +4,14 @@
  * Source: src/data/surroundings.js (generated from the project's OpenStreetMap world tiles).
  */
 import { SURROUNDINGS } from '../data/surroundings.js';
-import { SCALE } from '../config.js';
+import { SCALE, TOY } from '../config.js';
 import { toUnits } from './units.js';
 import { inPolygon, polylineDistance, signedArea, boundsOf } from './math.js';
 import { OUTLINE } from './cemetery.js';
+import { LANDMARKS } from '../data/landmarks.js';
+
+/** Buildings drawn as landmarks (churches) instead of ordinary blocks. */
+const LANDMARK_BUILDINGS = new Set(LANDMARKS.filter((l) => l.building).map((l) => l.building));
 
 /** Margin (units) kept between the edge of the extracted data and the edge of the play region. */
 const REGION_MARGIN = 4;
@@ -19,8 +23,12 @@ export const REGION = (() => {
 })();
 export const inRegion = (x, z) => x > REGION.x0 && x < REGION.x1 && z > REGION.z0 && z < REGION.z1;
 
-/** Streets and footways: { name, kind, width (m), pts, half (half width in units) }. */
-export const STREETS = SURROUNDINGS.streets.map((s) => ({ ...s, pts: s.pts.map(toUnits), half: (s.width * SCALE) / 2 }));
+/**
+ * Streets and footways: { name, kind, width (m, as mapped), pts, half }. half is the DRAWN half width in units: a little
+ * wider than life (TOY.streetWiden) so the streets read as the way through.
+ */
+const drawnHalf = (width) => (width * SCALE * TOY.streetWiden) / 2;
+export const STREETS = SURROUNDINGS.streets.map((s) => ({ ...s, pts: s.pts.map(toUnits), half: drawnHalf(s.width) }));
 /** Areas: { kind, name, pts }. Kinds: park, grass, garden, pitch, playground, square, schoolyard, parking, flowerbed, water. */
 export const AREAS = SURROUNDINGS.areas.map((a) => ({ ...a, pts: a.pts.map(toUnits) }));
 
@@ -34,8 +42,6 @@ export function streetDistance(x, z) {
 export const inWater = (x, z) => AREAS.some((a) => a.kind === 'water' && inPolygon(x, z, a.pts));
 
 // ---- buildings --------------------------------------------------------------------------------------------------------
-/** Blocks this close to the cemetery outline (units, ~55 m) stand up in 3D; the rest are printed flat as roofs. */
-const RAISE_WITHIN = 11;
 /** Smallest footprint that stands up (units², 4 = 100 m²); smaller ones are sheds and booths. */
 const MIN_RAISED_AREA = 4;
 /** Untagged ("yes") buildings need this much floor (units², 250 m²) or a mapped storey count to stand up. */
@@ -46,7 +52,8 @@ const NEVER_RAISED = new Set(['garage', 'garages', 'shed', 'kiosk', 'roof', 'car
 const MAX_RAISED_CORNERS = 40;
 
 /**
- * Buildings outside the walls: { id, kind, levels, name, pts, area, raised, box }.
+ * Buildings outside the walls: { id, kind, levels, name, pts, area, raised, landmark, box }. raised: it can stand up
+ * (world/stream.js stands it when the walker is near; every block is also printed flat as its roof).
  * pts are wound with negative signed area, so the shape lies behind its first edge (what prismFold expects).
  */
 export const BUILDINGS = SURROUNDINGS.buildings
@@ -54,12 +61,12 @@ export const BUILDINGS = SURROUNDINGS.buildings
     let pts = b.pts.map(toUnits);
     if (signedArea(pts) > 0) pts = pts.slice().reverse();
     const inside = pts.every(([x, z]) => inPolygon(x, z, OUTLINE));
-    const near = Math.min(...pts.map(([x, z]) => polylineDistance(x, z, OUTLINE))) < RAISE_WITHIN;
     const area = Math.abs(signedArea(pts));
     const bigEnough = area >= MIN_RAISED_AREA && (b.kind !== 'yes' || b.levels || area >= MIN_UNTAGGED_AREA);
-    const raised = near && !inside && bigEnough && !NEVER_RAISED.has(b.kind) && pts.length <= MAX_RAISED_CORNERS;
+    const landmark = LANDMARK_BUILDINGS.has(b.id);
+    const raised = !inside && !landmark && bigEnough && !NEVER_RAISED.has(b.kind) && pts.length <= MAX_RAISED_CORNERS;
     const { x0, z0, x1, z1 } = boundsOf(pts);
-    return { ...b, pts, area, raised, inside, box: [x0, z0, x1, z1] };
+    return { ...b, pts, area, raised, landmark, inside, box: [x0, z0, x1, z1] };
   })
   .filter((b) => !b.inside); // the cemetery's own buildings come from assistens-osm.js
 
@@ -94,3 +101,26 @@ export function buildingAt(x, z, pad = 0) {
   }
   return null;
 }
+
+// ---- the context ring ---------------------------------------------------------------------------------------------------
+/**
+ * Everything imported beyond the play region, flat only: { bounds: {x0, z0, x1, z1}, streets, areas, buildings }
+ * in units. The minimap draws it, and the ground sheet prints a margin of it round the walkable area.
+ */
+export const CONTEXT = (() => {
+  const c = SURROUNDINGS.context;
+  const [x0, z0, x1, z1] = c.bounds.map((v) => v * SCALE);
+  return {
+    bounds: { x0, z0, x1, z1 },
+    streets: c.streets.map((s) => ({ ...s, pts: s.pts.map(toUnits), half: drawnHalf(s.width) })),
+    areas: c.areas.map((a) => ({ ...a, pts: a.pts.map(toUnits) })),
+    buildings: c.buildings.map((pts) => pts.map(toUnits)),
+  };
+})();
+
+/** The printed ground sheet: the play region plus this margin (units) of context, so the map view never shows bare paper. */
+export const SHEET_MARGIN = 46;
+export const SHEET = {
+  x0: Math.max(CONTEXT.bounds.x0, REGION.x0 - SHEET_MARGIN), z0: Math.max(CONTEXT.bounds.z0, REGION.z0 - SHEET_MARGIN),
+  x1: Math.min(CONTEXT.bounds.x1, REGION.x1 + SHEET_MARGIN), z1: Math.min(CONTEXT.bounds.z1, REGION.z1 + SHEET_MARGIN),
+};

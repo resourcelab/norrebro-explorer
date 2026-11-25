@@ -6,6 +6,7 @@
 import * as P2 from 'papercraft/lib/paperkit-2d.js';
 import { prismFold } from 'papercraft/lib/paperkit-3d.js';
 import { convexHull, signedArea } from '../map/math.js';
+import { TOY } from '../config.js';
 
 const FACADES = [
   { wall: '#d9a85a', brick: false }, { wall: '#c4694a', brick: true }, { wall: '#e7dcc2', brick: false },
@@ -15,9 +16,9 @@ const FACADES = [
 const ROOFS = ['#a9493a', '#5f6166', '#8a4a3a', '#6f6a64'];
 const AWNINGS = ['#2f5d50', '#8a2f2a', '#c49a3a', '#2c3a5a'];
 
-/** Height: a ground floor plus one storey per mapped level (blocks without a count get 5 or 6). */
-const GROUND_FLOOR = 1.0;
-const STOREY = 0.78;
+/** Height: true to life, a shop floor plus a storey per mapped level (blocks without a count get 5 or 6). */
+const GROUND_FLOOR = TOY.groundFloor;
+const STOREY = TOY.storey;
 /** Facades are printed coarser than small pieces: they are big and usually a little out of focus. */
 const FACADE_RES = 0.55;
 
@@ -37,7 +38,7 @@ function facadePaint({ wall, brick }, k) {
     if (brick) P.marks('brick', { color: P2.shade(wall, -0.45), alpha: 0.3, size: 0.12, units: true });
     // the upper floors: a grid of windows, a few lit
     P.marks('window', {
-      region: { ...box, y1: box.y1 - shopHeight }, units: true, size: 0.46, color: '#f3e2b0', dark: '#3b4653', lit: 0.12, alpha: 1,
+      region: { ...box, y1: box.y1 - shopHeight }, units: true, size: 0.37, color: '#f3e2b0', dark: '#3b4653', lit: 0.12, alpha: 1,
     });
     P.draw((g) => {
       const base = box.y0 + box.h - shopHeight;
@@ -75,7 +76,7 @@ const ROOF_PAINTS = ROOFS.map(roofPaint);
  * with walls facing inwards), wound behind its first edge, near-duplicate corners dropped, the longest edge first so
  * it becomes the front.
  */
-function foldableFootprint(pts) {
+export function foldableFootprint(pts) {
   let hull = convexHull(pts);
   if (signedArea(hull) > 0) hull.reverse();
   hull = hull.filter((p, i) => {

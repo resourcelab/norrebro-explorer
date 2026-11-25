@@ -8,7 +8,7 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
   letter-spacing: .03em; text-shadow: 0 1px 3px #5a3a20;
 }
 .credit {
-  position: fixed; right: 10px; bottom: 8px; pointer-events: none;
+  position: fixed; right: 10px; top: 8px; pointer-events: none;
   font: 11px Georgia, serif; color: #fff6e4; opacity: .75; text-shadow: 0 1px 2px #5a3a20;
 }
 .grave-label {
@@ -24,3 +24,15 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
   border: 2px solid #1b1b1b; border-radius: 3px; box-shadow: 0 3px 8px rgba(40,25,10,.3); opacity: 0; transition: opacity .3s;
 }
 .street-sign.visible { opacity: 1; }
+
+.minimap {
+  position: fixed; right: 18px; bottom: 18px; width: 210px; height: 210px; border-radius: 50%; cursor: pointer;
+  box-shadow: 0 4px 14px rgba(40,25,10,.35); opacity: 1;
+}
+.minimap canvas { display: block; border-radius: 50%; }
+.zoom-button {
+  position: fixed; right: 240px; bottom: 26px; padding: 7px 12px; cursor: pointer; user-select: none;
+  background: #fbfaf6; color: #2e241c; font: 600 14px/1.2 'Helvetica Neue', Arial, sans-serif;
+  border: 2px solid #2e241c; border-radius: 6px; box-shadow: 0 3px 8px rgba(40,25,10,.3);
+}
+.zoom-button:hover { background: #f1e9d8; }

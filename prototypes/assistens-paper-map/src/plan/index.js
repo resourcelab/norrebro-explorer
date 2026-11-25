@@ -7,11 +7,14 @@
  */
 import * as P2 from 'papercraft/lib/paperkit-2d.js';
 import { START } from '../config.js';
+import { FAR } from '../map/landmarks.js';
 import { centroid } from '../map/math.js';
 import { CHAPEL_CENTRE, SHEDS } from '../map/cemetery.js';
 import { createKeepOut } from './keep-out.js';
 import { planNotableGraves, planTrees, planPlots, planBenches, planLamps } from './cemetery.js';
-import { planStreetTrees, planPlaygrounds, planPlaygroundKit, planStreetFurniture, planCycleRoutes } from './neighbourhood.js';
+import {
+  planStreetTrees, planPlaygrounds, planPlaygroundKit, planStreetFurniture, planCycleRoutes, planCornerSigns, planFingerposts,
+} from './neighbourhood.js';
 
 /**
  * @returns {{
@@ -20,7 +23,8 @@ import { planStreetTrees, planPlaygrounds, planPlaygroundKit, planStreetFurnitur
  *   plots: {x: number, z: number, variant: number}[], benches: number[][], lamps: number[][],
  *   streetTrees: {x: number, z: number, kind: string}[], playgrounds: {pts: number[][], sandpit: boolean}[],
  *   playgroundKit: {x: number, z: number, kind: string}[], racks: number[][], streetBenches: number[][],
- *   cycleRoutes: {name: string, pts: number[][]}[],
+ *   cycleRoutes: {name: string, pts: number[][]}[], cornerSigns: {x: number, z: number, names: string[]}[],
+ *   fingerposts: {x: number, z: number, arms: {name: string, dx: number, metres: number}[]}[],
  * }}
  */
 export function planWorld() {
@@ -46,8 +50,12 @@ export function planWorld() {
   const { racks, benches: streetBenches } = planStreetFurniture();
   const cycleRoutes = planCycleRoutes();
 
+  // wayfinding
+  const cornerSigns = planCornerSigns();
+  const fingerposts = planFingerposts(FAR, START);
+
   return {
     rnd, clear: keep.clear, notable, trees, plots, benches, lamps,
-    streetTrees, playgrounds, playgroundKit, racks, streetBenches, cycleRoutes,
+    streetTrees, playgrounds, playgroundKit, racks, streetBenches, cycleRoutes, cornerSigns, fingerposts,
   };
 }
