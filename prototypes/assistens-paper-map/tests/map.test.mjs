@@ -2,10 +2,10 @@
 //   npm test
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { inPolygon, segmentDistance, signedArea, convexHull, pointAlong, polylineLengths } from '../src/map/math.js';
-import { GATES, insideCemetery, wallBlocks } from '../src/map/cemetery.js';
-import { REGION, BUILDINGS, buildingAt } from '../src/map/neighbourhood.js';
-import { blocksWalker } from '../src/map/walk.js';
+import { inPolygon, segmentDistance, signedArea, convexHull, pointAlong, polylineLengths } from '../src/core/map/math.js';
+import { GATES, insideCemetery, wallBlocks } from '../src/core/map/cemetery.js';
+import { REGION, BUILDINGS, buildingAt } from '../src/core/map/neighbourhood.js';
+import { blocksWalker } from '../src/core/map/walk.js';
 import { START } from '../src/config.js';
 
 const square = [[0, 0], [2, 0], [2, 2], [0, 2]];

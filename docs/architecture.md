@@ -51,11 +51,16 @@ stand in for hand-written landmarks.
 
 ## Where things are today (November 2026)
 
-- **Done:** the import (`tools/import-osm.mjs` → `data/world/`) for inner Nørrebro, and the papercraft prototype
-  (`prototypes/assistens-paper-map/`).
-- **The prototype is not yet split into core + style pack.** It already keeps the layers apart in a way that maps onto
-  this plan: `src/map/` and `src/plan/` (world facts, walking rules, placement; no graphics, tested in Node) become the
-  seed of `core/`, while `src/pieces/` and `src/world/` (paper prints, folds, the three.js harness) become the
-  papercraft style pack.
-- **Next:** landmarks data, then lift `map/` into `core/` and read the world tiles directly instead of the prototype's
-  own extract (`src/data/surroundings.js`).
+- **Done:** the import (`tools/import-osm.mjs` → `data/world/`) for inner Nørrebro, and the prototype
+  (`prototypes/assistens-paper-map/`), now split into a game core and swappable styles:
+  - `src/core/` is the game with no graphics: the map, the placement plan, the world as a list of plain things
+    (`world.js`), input, walking and collision, near/far, the cyclists, and "where am I". It is tested in Node, and a
+    test fails if it ever imports a style or three.js.
+  - `src/styles/<name>/` draws the game. A style implements four calls (`build`, `start`, `near`, `zoom`; see
+    `src/styles/README.md`). Two exist: `papercraft` (the 3D paper diorama, with the papercraft harness in "drive"
+    mode so the core moves the walker) and `flat` (a 2D top-down map), switched with `?style=`.
+  - `src/ui/` holds the overlays (minimap, compass, labels, street sign, zoom button), which read the game state and
+    work over any style.
+- **Next:** landmarks data, then the core reads the world tiles directly (chunk by chunk) instead of the prototype's
+  own extract (`src/data/surroundings.js`), so the walkable area can grow. When a second app needs the core, it moves
+  from the prototype to the repo root (`core/`, `styles/`) unchanged.

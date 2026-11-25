@@ -19,3 +19,9 @@ Local change: `harness.js`, marked `local change` (norrebro-explorer, 2026-11-25
   and Shift runs `runFactor` times faster.
 - `view.pitchMin` / `view.pitchMax`: the drag-to-look pitch range can change at runtime (the map view looks steeper).
 - `H.post`: the lens (`PaperPost`) is reachable once started, so the map view can retune haze and blur.
+
+Local change (2026-11-25): `createHarness({ drive: true })` lets the game drive the hero. The harness then reads no
+keys and does no collision: each step the game calls `H.drive({ x, z, heading, maxSpeed })` (from an `H.beforeStep`
+hook, which runs before the harness's own step) and the harness animates the stride, lean and turn and frames him with
+its camera window and sight assist as before. `__papercraft.place(x, z)` asks `H.placeHook(x, z)` (the game) whether
+he may stand there.

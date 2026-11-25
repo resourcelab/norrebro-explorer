@@ -7,18 +7,20 @@
  *   - a compass rose (N Ø S V, Danish first) turned the way the 3D view is turned, so north on screen is easy to find
  * Click it to switch between the walking view and the map view.
  *
+ * It reads only the map and game.state, so it works with every style.
  * The streets, parks and roofs are drawn once into a large off-screen canvas; each update only crops and decorates it.
  */
-import { HOME, PALETTE as C, SCALE } from '../config.js';
-import { CONTEXT, REGION, STREETS, AREAS, BUILDINGS } from '../map/neighbourhood.js';
-import { OUTLINE, PATHS } from '../map/cemetery.js';
-import { NAMED_PLACES, FAR } from '../map/landmarks.js';
+import { HOME, SCALE } from '../config.js';
+import { CONTEXT, REGION, STREETS, AREAS, BUILDINGS } from '../core/map/neighbourhood.js';
+import { OUTLINE, PATHS } from '../core/map/cemetery.js';
+import { NAMED_PLACES, FAR } from '../core/map/landmarks.js';
 import { isCaptureMode, createOverlay } from './overlay.js';
 
 const SIZE = 210; // css px
 const SPAN = 120; // units across the map (600 m)
 const BASE_PPU = 4; // pixels per unit in the off-screen base map
 const UPDATE_EVERY = 0.1; // seconds
+const PATH = '#efe4c8';
 
 const AREA_FILL = { water: '#9cc3d5', park: '#b9cf95', grass: '#c3d5a2', garden: '#b5cd96', pitch: '#a7c98f', playground: '#e6cf92', cemetery: '#aac58e', square: '#e4ddcb', wood: '#9dbb83', scrub: '#acc290', schoolyard: '#e6dcc4', parking: '#d9d4c8', flowerbed: '#d9b3c0' };
 
@@ -56,12 +58,12 @@ function drawBase() {
       g.stroke();
     }
   }
-  g.strokeStyle = C.path;
+  g.strokeStyle = PATH;
   for (const p of PATHS) { g.lineWidth = Math.max(1, p.half * 2 * BASE_PPU); line(p.pts); g.stroke(); }
   return { cv, X, Z };
 }
 
-export function attachMinimap(H, { onClick } = {}) {
+export function attachMinimap(game) {
   if (isCaptureMode()) return;
   const wrap = createOverlay('minimap visible');
   const canvas = document.createElement('canvas');
@@ -73,7 +75,7 @@ export function attachMinimap(H, { onClick } = {}) {
   wrap.appendChild(canvas);
   wrap.title = 'Kort · Map: click to switch views (Z)';
   wrap.addEventListener('pointerdown', (e) => e.stopPropagation());
-  wrap.addEventListener('click', (e) => { e.stopPropagation(); onClick?.(); });
+  wrap.addEventListener('click', (e) => { e.stopPropagation(); game.toggleZoom(); });
 
   const base = drawBase();
   const g = canvas.getContext('2d');
@@ -86,7 +88,7 @@ export function attachMinimap(H, { onClick } = {}) {
   }
 
   function draw() {
-    const p = H.hero.group.position;
+    const p = game.state.hero;
     const toScreen = (x, z) => [SIZE / 2 + (x - p.x) * k, SIZE / 2 + (z - p.z) * k];
     const inView = (sx, sy) => Math.hypot(sx - SIZE / 2, sy - SIZE / 2) < SIZE / 2 - 12;
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -170,7 +172,7 @@ export function attachMinimap(H, { onClick } = {}) {
     }
 
     // you are here: an arrow along the walker's heading (he faces +z at heading 0; north is up, so +z is down)
-    const h = H.hero.group.rotation.y;
+    const h = game.state.hero.heading;
     g.save();
     g.translate(SIZE / 2, SIZE / 2);
     g.rotate(Math.atan2(Math.cos(h), Math.sin(h)));
@@ -194,7 +196,7 @@ export function attachMinimap(H, { onClick } = {}) {
     g.beginPath();
     g.arc(SIZE / 2, SIZE / 2, SIZE / 2 - 2, 0, 2 * Math.PI);
     g.stroke();
-    compass(24, 24, (H.view.yaw * Math.PI) / 180);
+    compass(24, 24, (game.state.view.yaw * Math.PI) / 180);
   }
 
   function label(text, x, y) {
@@ -265,7 +267,7 @@ export function attachMinimap(H, { onClick } = {}) {
     g.restore();
   }
 
-  H.onStep((t, dt) => {
+  game.onFrame((state, dt) => {
     since += dt;
     if (since < UPDATE_EVERY) return;
     since = 0;

@@ -6,7 +6,7 @@ parks, the lakes, landmarks and local spots, learning to read a map and find you
 Everything is built from [OpenStreetMap](https://www.openstreetmap.org), so the streets, buildings, parks and trees are
 where they really are.
 
-**▶ [Play it in your browser](https://resourcelab.github.io/norrebro-explorer/)** (a computer with a keyboard works best: arrow keys or WASD to walk, Z for the map)
+**▶ [Play it in your browser](https://resourcelab.github.io/norrebro-explorer/)** (a computer with a keyboard works best: arrow keys or WASD to walk, Z for the map) · [the flat map style](https://resourcelab.github.io/norrebro-explorer/?style=flat)
 
 ![Assistens Kirkegård and Nørrebrogade, papercraft prototype](prototypes/assistens-paper-map/docs/2026-11-24-norrebrogade-side.png)
 
@@ -69,8 +69,9 @@ norrebro-explorer/
     └── assistens-paper-map/  first playable slice: Assistens Kirkegård in papercraft
 ```
 
-Planned, not started yet: `core/` (style-free game logic), `styles/` (one renderer per visual style) and
-`data/landmarks/` (hand-checked landmark texts in Danish and English).
+The game is split into a style-free core and swappable styles (papercraft and a flat map so far), inside the
+prototype for now: see `prototypes/assistens-paper-map/src/core/` and `src/styles/`. Planned: `data/landmarks/`
+(hand-checked landmark texts in Danish and English).
 
 ## Decisions so far
 
@@ -79,7 +80,7 @@ Planned, not started yet: `core/` (style-free game logic), `styles/` (one render
 | Backend | Game core only, runs in the browser. No server, accounts or multiplayer. Saves in the browser. |
 | Language | Danish first, English second. Simple texts for kids, with a "more" layer for adults. |
 | First playable area | Inner Nørrebro: the lakes to Assistens, Nørrebrogade, Sankt Hans Torv, Blågårds Plads, Elmegade (~1 km²). |
-| Styles to compare | Papercraft (existing), top-down 2D illustrated, pixel art. Choose from mockups before building one. |
+| Styles to compare | Papercraft and a flat map run on the same game core (`?style=`); 2D illustrated and pixel art can be added as styles. |
 | Build order | Game core first (data, world, movement, journal), style chosen in parallel, then the chosen style. |
 
 ## Roadmap
