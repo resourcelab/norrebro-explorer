@@ -10,15 +10,16 @@ street you are on.
 - **Open it:** double-click `dist/assistens-kirkegaard-paper-walk.html` (one self-contained file, works offline).
 - **Controls:** arrows / WASD walk · Shift run · Z (or the button) switches between the walking view and the map
   view · click the minimap to switch too · drag to look around · click the scene to fold the world flat and back up.
-- **URL options:** `?mood=dusk` or `?mood=night` · `?zoom=map` opens on the map view · `?capture` hides the overlays
-  (for screenshots; `?capture&hud` keeps them).
+- **URL options:** `?style=flat` for the flat map style · `?mood=dusk` or `?mood=night` (papercraft) · `?zoom=map` opens
+  on the map view · `?capture` hides the overlays (for screenshots; `?capture&hud` keeps them).
 
 ## Finding your way
 
-The settings live in `src/config.js` (`TOY`, `WALK`, `ZOOMS`, `STREAM`), so they are easy to tune.
+The settings live in `src/config.js` (`TOY`, `WALK`, `ZOOMS`, `NEARBY`), so they are easy to tune; each style's own
+look (colours, camera, lens) lives in its `settings.js`.
 
 - **True layout, quicker legs:** every street, block and path is where it really is (1 unit = 5 m). Walking is
-  1.25 units/s (≈ 6 m/s), so crossing a 300 m chunk takes about a minute; Shift runs 2.2× faster.
+  2.5 units/s (12.5 m/s), so crossing a 300 m chunk takes about 25 seconds; Shift runs 2.2× faster.
 - **Toy scale:** buildings are true height (3 m storeys), streets are drawn 1.4× wider than mapped, landmarks 1.3×
   taller than life. People, trees and street furniture are larger than life (a real person would be a speck) but stay
   smaller than the buildings round them.
@@ -37,7 +38,7 @@ The settings live in `src/config.js` (`TOY`, `WALK`, `ZOOMS`, `STREAM`), so they
   frame, so the load stays quick and walking never stutters. Beyond the walkable area, a veiled ring of context
   (streets, roofs, the lakes) is printed so the map view never ends in bare paper.
 
-Status: v0.3 (wayfinding and scale), 2026-11-25. The first slice of [Nørrebro Explorer](../../README.md).
+Status: v0.4 (game core and swappable styles), 2026-11-25. The first slice of [Nørrebro Explorer](../../README.md).
 
 ![Nørrebrogade side](docs/2026-11-24-norrebrogade-side.png)
 ![Hans Tavsens Park](docs/2026-11-24-hans-tavsens-park.png)
@@ -59,68 +60,68 @@ has everything inlined and needs neither.
 
 ## How it works
 
-`src/main.js` runs the steps in order:
+The game and its look are apart. `src/core/` is the game with no graphics: the map, where everything stands, walking,
+collision, near and far, where you are. It describes the world as a list of plain **things** (a tree here, a block
+there, a church with its tower) and keeps a small **state** (the walker, the cyclists, the zoom). A **style** in
+`src/styles/` draws the things and runs the frame loop. The overlays in `src/ui/` read the state and work over any
+style. Switch styles with `?style=flat` (the default is papercraft); how to write one is in
+[`src/styles/README.md`](src/styles/README.md).
 
-1. **Harness:** `createHarness` from the vendored papercraft kit sets up three.js, the golden light, the tilt-shift
-   lens, the hinges every piece stands on, walking and the following camera.
-2. **Plan** (`src/plan/`): decide where everything stands. Positions only, seeded, so the same every load.
-3. **Ground** (`src/world/ground*.js`): paint the whole ground sheet once: streets, parks, roofs, lawn, plot beds,
-   leaves, paths, street names.
-4. **Build** (`src/world/build*.js`): put every standing piece on its hinge: chapel, walls, trees, graves, blocks,
-   playground kit, the walker.
-5. **Walking rules** (`src/map/walk.js`): buildings, water and walls block; gates and path openings let you through.
-6. **Life and traffic** (`src/world/life.js`, `traffic.js`): falling leaves, crows, squirrels, cyclists.
-7. **Overlays** (`src/ui/`): the place label, the street sign, the minimap with its compass, the zoom button.
+```
+              ┌──────────────── src/core (no graphics, tested in Node) ────────────────┐
+  data/ ───►  │ map/ ──► plan/ ──► world.js (things) ──► game.js: input, walking,     │
+              │                                          collision, near/far, traffic,│
+              │                                          places ──► game.state        │
+              └───────────────┬──────────────────────────────────────┬────────────────┘
+                              │ things, near/far, zoom               │ state
+                    ┌─────────┴──────────┐                  ┌────────┴─────────┐
+                    │ src/styles/<name>  │  draws, runs     │ src/ui (overlays)│
+                    │ papercraft · flat  │  the frame loop  │ minimap, labels  │
+                    └────────────────────┘                  └──────────────────┘
+```
+
+`src/main.js` creates the game, hands it to the chosen style (which builds the world and starts the loop, calling
+`game.step(dt)` every frame), then attaches the overlays.
 
 ```
 src/
 ├── index.html, styles.css   dev page and overlay styles (the build inlines both)
-├── main.js                  entry point: the steps above
-├── config.js                scale (1 unit = 5 m), palette, camera, walker start, the paper spec
+├── main.js                  entry point
+├── config.js                game settings for every style: scale, toy scale, walking, zooms, near/far, start, home
 ├── data/                    no logic
 │   ├── assistens-osm.js     the cemetery from OpenStreetMap: outline, paths, walls, gates, trees, benches, graves
 │   ├── surroundings.js      streets, blocks, parks, playgrounds, trees round the walls + a flat context ring (generated)
 │   ├── landmarks.js         churches, flags and far places to steer by
 │   └── notable-graves.js    who rests where (label text)
-├── map/                     the map in world units; no randomness
-│   ├── math.js              geometry helpers (points, polygons, polylines, hull)
-│   ├── units.js             metres → world units
-│   ├── cemetery.js          outline, paths, walls and their openings, gates, chapel, sheds
-│   ├── neighbourhood.js     play region, streets, areas, buildings, "which building is here?", context ring, sheet
-│   ├── landmarks.js         landmarks in world units (church towers, far places)
-│   └── walk.js              where the walker may go
-├── plan/                    where every piece stands (positions only)
-│   ├── index.js             planWorld(): runs the steps in a fixed order
-│   ├── keep-out.js          "keep clear" zones
-│   ├── cemetery.js          notable graves, trees, grave plots, benches, lamps
-│   └── neighbourhood.js     street trees, playground kit, bike racks, benches, cycle routes, corner signs, fingerposts
-├── pieces/                  how each kind of paper piece looks
-│   ├── trees.js  graves.js  walls.js  chapel.js  props.js  critters.js  walker.js
-│   ├── buildings.js         apartment blocks folded on their footprints
-│   ├── playground.js        swings, slide, climbing dome, seesaw
-│   ├── street.js            bike rack, cyclists
-│   ├── landmarks.js         church with spire, flag, fingerpost
-│   ├── signs.js             corner street sign
-│   └── lettering.js         text on paper pieces
-├── world/                   puts it together
-│   ├── ground.js            the printed ground (calls the two layers below)
-│   ├── ground-neighbourhood.js, ground-cemetery.js
-│   ├── build.js             the standing pieces (calls the two halves below, then adds the walker)
-│   ├── build-cemetery.js, build-neighbourhood.js, build-wayfinding.js
-│   ├── popup.js             places a card on its hinge, facing the walking camera; hands it to the stream
-│   ├── stream.js            near stands up, far lies flat; builds pieces when first needed
-│   ├── life.js              leaves, crows, squirrels, cloud shadows
-│   └── traffic.js           cyclists riding the streets
-└── ui/
-    ├── overlay.js           shared overlay helpers
-    ├── place-labels.js      "who rests here" / the landmark you are at
-    ├── street-sign.js       the street-name sign
-    ├── minimap.js           minimap, home marker, compass
-    └── zoom.js              walking view / map view
-tests/map.test.mjs           geometry, gates, buildings, reachability
-tests/wayfinding.test.mjs    landmarks, signs, fingerposts, the near/far stream
+├── core/                    the game: no graphics, no style
+│   ├── map/                 the map in world units: math, units, cemetery, neighbourhood, landmarks, walk rules
+│   ├── plan/                where every piece stands (seeded): cemetery, neighbourhood, signs, fingerposts
+│   ├── world.js             the world as things (the contract with the styles)
+│   ├── game.js              the game loop step and state; attach(style)
+│   ├── input.js             keyboard → intent (and a scripted input for tests)
+│   ├── movement.js          walking: acceleration, turning, sliding along walls
+│   ├── colliders.js         collision: the map's rules plus round solid things
+│   ├── nearby.js            which things are near the walker
+│   ├── traffic.js           the cyclists
+│   ├── places.js            which place and street you are at
+│   └── random.js            seeded randomness
+├── styles/
+│   ├── README.md            the style interface
+│   ├── index.js             the list of styles (?style=<name>)
+│   ├── papercraft/          the pop-up paper diorama
+│   │   ├── index.js         the style: harness in drive mode, build, near/far, zoom
+│   │   ├── settings.js      palette, camera and lens per zoom, build budget
+│   │   ├── world/           printed ground, paper pieces per kind (build.js), presenter (near/far in paper),
+│   │   │                    camera, popup, paper-life
+│   │   └── pieces/          how each kind looks: trees, graves, walls, chapel, blocks, churches, signs, playground…
+│   └── flat/index.js        the flat top-down map (2D canvas)
+└── ui/                      overlays for every style: minimap + compass + home, place label, street sign, zoom button
+tests/
+├── core.test.mjs            the core runs headless: things, collision, walking, near/far, a whole game run
+├── map.test.mjs             geometry, gates, buildings, reachability
+└── wayfinding.test.mjs      landmarks, corner signs, fingerposts, wider streets, the context ring
 tools/                       extract-surroundings.py, capture.py
-vendor/papercraft/           the papercraft kit (MIT, see its README for the local changes)
+vendor/papercraft/           the papercraft kit (MIT, see its README for the local changes, including drive mode)
 scripts/build.mjs            esbuild bundle → dist/
 ```
 

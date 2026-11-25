@@ -1,16 +1,10 @@
 /**
- * World settings: map scale, palette, camera and the walker's start.
- *
- * Paper spec (the papercraft skill's planning sheet):
- *   BRIEF    Assistens Kirkegård, Copenhagen, a still November afternoon, low golden sun. A cemetery that is also the
- *            neighbourhood's park: tree avenues, gravel paths, the yellow wall, the chapel, old and new graves.
- *   PALETTE  lawn straw ground, gravel paths, ochre-gold leaves (linden, chestnut, beech), Danish red and cream
- *            accents, grey and sandstone gravestones, an ochre wall.
- *   LIGHT    the harness's "golden" mood: warm low key from the left, warm brown shadow tint.
- *   LIFE     falling leaves, crows that peck and scatter, squirrels that bound away, cloud shadows.
- *   TYPES    crosses (trees), single cards (grave plots, benches, lamps, critters), prism folds (walls, hedges, gate
- *            posts, sheds), a box fold (the chapel).
+ * Game settings shared by every style: map scale, toy scale, walking, zoom levels, near/far radius, start and home.
+ * Style-specific settings (colours, camera, lens) live in each style's own settings file.
  */
+
+/** Which style draws the game unless ?style=<name> says otherwise (see src/styles/index.js). */
+export const DEFAULT_STYLE = 'papercraft';
 
 /** World units per metre: 1 unit = 5 m (the whole cemetery is ~120 x 120 units). */
 export const SCALE = 0.2;
@@ -43,56 +37,30 @@ export const TOY = {
   hedgeHeight: 0.5,
 };
 
-/** Walking: about a minute to cross a 300 m chunk (1.25 units/s ≈ 6 m/s); hold Shift to run. */
-export const WALK = { speed: 1.25, runFactor: 2.2, heroHeight: 2.6 };
+/**
+ * Walking: 2.5 units/s (12.5 m/s), so a 300 m chunk takes about 25 s to cross; hold Shift to run 2.2x faster.
+ * accel: how quickly he gets up to speed (units/s²); turn: how quickly he turns to face the way he walks (1/s);
+ * radius: how close he comes to a tree or a bench (units).
+ */
+export const WALK = { speed: 2.5, runFactor: 2.2, accel: 40, turn: 13, radius: 0.25, heroHeight: 2.6 };
 
 /**
- * Two zooms (Z or the button toggles): close for walking, and a map view that shows about 400 m across.
- * dist is the camera's distance from the walker; at 26° field of view a 16:9 frame shows ~0.8 × dist across.
+ * Two zooms (Z, the button or a click on the minimap switches): close for walking, and a map view. `across` is about
+ * how much of the world (units) the screen shows across; each style turns that into its own camera.
  */
 export const ZOOMS = {
-  walk: { dist: 46, pitch: 55, pitchMin: 44, pitchMax: 64, haze: [34, 95], blur: { focusBand: 0.3, ramp: 0.3, maxBlur: 14 } },
-  map: { dist: 118, pitch: 72, pitchMin: 62, pitchMax: 80, haze: [140, 260], blur: { focusBand: 0.7, ramp: 0.5, maxBlur: 5 } },
+  walk: { across: 37 }, // ~185 m
+  map: { across: 95 }, // ~475 m
 };
 
 /**
- * Near stands up, far lies flat: pieces within `radius` units (60 = 300 m) of the walker stand; further ones lie flat.
- * Pieces not yet built are built a few per frame (at most buildPerStep, within budgetMs).
+ * Near and far: things within `radius` units (60 = 300 m) of the walker are near, further ones far (a thing that is
+ * near stays near until it is radius + hysteresis away). Each style decides what near and far look like.
  */
-export const STREAM = { radius: 60, hysteresis: 6, checkEvery: 0.3, buildPerStep: 4, budgetMs: 5 };
-
-export const PALETTE = {
-  ground: '#cfc8b2',
-  street: '#aaa596',
-  lawn: '#c3bd97',
-  wash: '#b0b089',
-  washB: '#c4ba92',
-  path: '#efe4c8',
-  asphalt: '#ddd7c8',
-  linden: '#dcae3c',
-  chestnut: '#c9772f',
-  beech: '#b5612f',
-  maple: '#e0a03a',
-  poplar: '#cdb44e',
-  yew: '#4f6a4a',
-  trunk: '#4e3b2e',
-  red: '#b4432f',
-  cream: '#f3ead6',
-  ink: '#2e241c',
-  wall: '#dcb253',
-  coping: '#9a5a35',
-  hedge: '#5d7348',
-  bench: '#3f5a44',
-  stones: ['#a3a19a', '#cdb48a', '#6a6763', '#e3dccb', '#a77462', '#8e9188'],
-  moss: '#71804c',
-  soil: '#9b8a6c',
-};
+export const NEARBY = { radius: 60, hysteresis: 6, checkEvery: 0.3 };
 
 /** Where the walker starts (world units): the open path just west of the chapel. */
 export const START = [12, 23.2];
 
 /** Home on the minimap: for now where the walker starts. Later: the player's own address (or their Airbnb). */
 export const HOME = { at: START, label: 'Start' };
-
-/** Camera: the walking zoom, centred on the walker (follow [0, 0]). */
-export const VIEW = { pitch: ZOOMS.walk.pitch, dist: ZOOMS.walk.dist, target: [START[0], 1.5, START[1]], follow: [0, 0] };

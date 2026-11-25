@@ -20,7 +20,7 @@ playwright install chromium
 
 ```sh
 cd prototypes/assistens-paper-map
-npm run dev        # http://localhost:5173/src/ (ES modules need a local server)
+npm run dev        # http://localhost:5173/src/ (ES modules need a local server); add ?style=flat for the flat map
 npm test           # map and walking-rule tests (Node, no browser)
 npm run build      # dist/assistens-kirkegaard-paper-walk.html
 npm run capture    # headless screenshots into docs/frames/ (needs Playwright)
@@ -40,8 +40,12 @@ Commit the rebuilt `dist/` page together with the source change, so the double-c
   ground. Data files store metres; the prototype's world uses units of 5 m (`SCALE` in `src/config.js`).
 - **Seeded randomness only** (`P2.rng(seed)` or the plan's `rnd`), never `Math.random`, so the world is the same on
   every load.
-- **Layers:** `data/` holds no logic, `map/` holds no randomness, `plan/` decides positions only, `pieces/` decide looks
-  only, and `world/` puts them together. Keep new code on the right layer.
+- **Core and styles:** `src/core/` is the game and never draws: no three.js, no DOM drawing, no imports from a style
+  (a test checks). A style (`src/styles/<name>/`) draws `game.things` and `game.state` and never decides game rules
+  (what blocks the walker, how fast he walks, what is near). New gameplay goes in the core; a new look goes in a style.
+  How to write a style: `prototypes/assistens-paper-map/src/styles/README.md`.
+- **Layers inside the core:** `data/` holds no logic, `core/map/` holds no randomness, `core/plan/` decides positions
+  only, and `core/world.js` turns them into things.
 - **Generated files** (`src/data/surroundings.js`, `data/world/`, `dist/`) are never edited by hand: change the tool and
   regenerate.
 

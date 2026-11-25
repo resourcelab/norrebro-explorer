@@ -57,7 +57,8 @@ export const MOODS = {
  */
 export function createHarness({ bounds = { x0: -64, x1: 64, z0: -62, z1: 38 }, ground = '#d9d2c2', view: view0 = {}, testView = { dist: 38, target: [3, 1.5, -6] },
   heroHeight = 3.6, light = {}, lens = {}, walk: walkOpts = { step: 0.75, radius: 0.6 }, moods = MOODS, play = false, focus = null, mood = null, stock = '#f7f0e2', walkArea = null, camBox = null,
-  walkSpeed = null, runFactor = 1 } = {}) {   // local change (norrebro-explorer): walkSpeed in units/s, Shift runs runFactor x faster
+  walkSpeed = null, runFactor = 1, drive = false } = {}) {   // local change (norrebro-explorer): walkSpeed in units/s, Shift runs runFactor x faster;
+  // drive: the game drives the hero (H.drive(pose) each step); the harness only animates and frames him
   const T0 = performance.now();
   // print costs by the scene line that asked for them: __papercraft.printStats() (and a console line when the build is
   // slow) says which pieces to print smaller (popup res), share (one print, many cards) or cut
@@ -344,7 +345,7 @@ export function createHarness({ bounds = { x0: -64, x1: 64, z0: -62, z1: 38 }, g
   const glowing = (group) => { glowers.push(group); group.traverse((o) => o.userData.setGlow?.(0.35)); };
 
   const H = { THREE, P2, flags, renderer, scene, camera, paper, view, target, walk, hinges, spots, bounds, heroHeight, groundAt, stack, dome,
-    printGround, popup, printed, cardOpts, inFrame, inReach, walkArea, sharpAt, lamp, glowing, hero: null, heroStride: null, stepHooks: [], onStep: (fn) => H.stepHooks.push(fn), restartHooks: [], onRestart: (fn) => H.restartHooks.push(fn), heroTurn: 'yaw', setHero: (h, { stride = null, turn = 'yaw' } = {}) => { H.hero = h; H.heroStride = stride; H.heroTurn = turn; }, start };
+    printGround, popup, printed, cardOpts, inFrame, inReach, walkArea, sharpAt, lamp, glowing, hero: null, heroStride: null, stepHooks: [], onStep: (fn) => H.stepHooks.push(fn), beforeStepHooks: [], beforeStep: (fn) => H.beforeStepHooks.push(fn), drive: (pose) => { H.driven = pose; }, driven: null, placeHook: null, restartHooks: [], onRestart: (fn) => H.restartHooks.push(fn), heroTurn: 'yaw', setHero: (h, { stride = null, turn = 'yaw' } = {}) => { H.hero = h; H.heroStride = stride; H.heroTurn = turn; }, start };
 
   // ---- start: light, lens, choreography, input, walking, the loop and the capture hook -------------------------------
   function start() {
@@ -410,7 +411,7 @@ export function createHarness({ bounds = { x0: -64, x1: 64, z0: -62, z1: 38 }, g
     let heading = 0, heading0 = 0, yawRate = 0, lean = 0, leanV = 0; const vel = new THREE.Vector3();
     let looking = false;             // a look() review frame holds the camera until restart()
     const DIST0 = view.dist;
-    if (flags.WALK) {
+    if (flags.WALK && !drive) {   // local change: a driven hero takes no keys here (the game reads them)
       // physical keys (e.code: any layout, caps lock or shift), no modifier chords, all released when the page loses
       // focus (a key let go in another window never sticks)
       addEventListener('keydown', (e) => { running = e.shiftKey; if (!KEYS[e.code] || e.metaKey || e.ctrlKey || e.altKey) return; keys.add(e.code); e.preventDefault(); });
@@ -548,6 +549,21 @@ export function createHarness({ bounds = { x0: -64, x1: 64, z0: -62, z1: 38 }, g
       if (node) { node.rotation.x = lean; node.rotation.z = -Math.max(-ROLL, Math.min(ROLL, 0.035 * yawRate)); }
     };
     function walkStep(dt) {
+      let d, sp;
+      if (drive) {                                            // local change: the game moved him; follow its pose
+        const p = H.driven;
+        if (!p) { sync(); pose(dt); return; }
+        SPEED = p.maxSpeed ?? SPEED0;
+        const x0 = heroPos.x, z0 = heroPos.z;
+        heroPos.set(p.x, 0, p.z);
+        d = Math.hypot(heroPos.x - x0, heroPos.z - z0);
+        if (dt > 0) vel.set((heroPos.x - x0) / dt, 0, (heroPos.z - z0) / dt);
+        sp = Math.hypot(vel.x, vel.z);
+        const dh = wrapA(p.heading - heading); heading = p.heading;
+        yawRate += (dh / Math.max(dt, 1e-4) - yawRate) * (1 - Math.exp(-20 * dt));
+        if (d > 1e-4) { if (!moved) { moved = true; if (focus && !focusAt) { focusFrom.copy(post.focus); focusBlend = 0; } } if (vel.x) facing = Math.sign(vel.x); }
+        walked += d;
+      } else {
       SPEED = SPEED0 * (running ? runFactor : 1);
       let ix = 0, iz = 0;
       for (const c of keys) { ix += KEYS[c][0]; iz += KEYS[c][1]; }
@@ -556,15 +572,16 @@ export function createHarness({ bounds = { x0: -64, x1: 64, z0: -62, z1: 38 }, g
       // velocity: a constant-rate approach to the wanted one
       const dvx = wx * SPEED - vel.x, dvz = wz * SPEED - vel.z, dvl = Math.hypot(dvx, dvz), maxDv = ACCEL * dt;
       if (dvl <= maxDv) vel.set(wx * SPEED, 0, wz * SPEED); else { vel.x += dvx / dvl * maxDv; vel.z += dvz / dvl * maxDv; }
-      const sp = Math.hypot(vel.x, vel.z);
+      sp = Math.hypot(vel.x, vel.z);
       // heading: toward the input (or the remaining velocity while coasting), smoothed
       let dh = 0;
       if (il || sp > 0.05) { const want = il ? Math.atan2(wx, wz) : Math.atan2(vel.x, vel.z); dh = wrapA(want - heading) * (1 - Math.exp(-TURN * dt)); heading = wrapA(heading + dh); }
       yawRate += (dh / Math.max(dt, 1e-4) - yawRate) * (1 - Math.exp(-20 * dt));
       const x0 = heroPos.x, z0 = heroPos.z;
       if (sp > 1e-4) { walk.move(heroPos, vel.x * dt, vel.z * dt); if (vel.x) facing = Math.sign(vel.x); }
-      const d = Math.hypot(heroPos.x - x0, heroPos.z - z0); walked += d;
+      d = Math.hypot(heroPos.x - x0, heroPos.z - z0); walked += d;
       if (sp > 1e-4 && dt > 0 && d < sp * dt * 0.98) vel.set((heroPos.x - x0) / dt, 0, (heroPos.z - z0) / dt);   // blocked or sliding: keep only what the obstacle allowed
+      }
       gait += ((d > 1e-4 ? 1 : 0) - gait) * (1 - Math.exp(-dt * 10));
       // lean: an under-damped spring toward a forward lean that grows with speed (rocks once on stop)
       // sub-stepped at 240 Hz like paper-motion's Spring: one explicit step per frame flips the lean's sign every frame
@@ -580,6 +597,7 @@ export function createHarness({ bounds = { x0: -64, x1: 64, z0: -62, z1: 38 }, g
     let time = 0;
     function step(dt) {
       time += dt;
+      for (const fn of H.beforeStepHooks) fn(time, dt);   // local change: the game's own step runs first
       for (const h of hinges) {
         h.update(dt);
         h.sway = h.swayAmp ? windSway(time, h.x, h.z, { amp: 1.6 * h.swayAmp, heroHeight }) : 0; // about the fold line
@@ -665,7 +683,7 @@ export function createHarness({ bounds = { x0: -64, x1: 64, z0: -62, z1: 38 }, g
     // step(sec) advances a fixed clock (stops the real-time loop) and renders
     window.__papercraft = { step(sec, fps = 60) { auto = false; for (let i = 0; i < Math.round(sec * fps); i++) step(1 / fps); render(); return time; }, restart,
       resume() { last = performance.now(); auto = true; }, toggle: () => setOpen(!up), post, scene, camera, pieces: hinges.length, walk, view, target, heroPos,
-      place: (x, z) => { const s = walk.surface(x, z); if (!s) return null; heroPos.set(x, s.y, z); sync(); moved = true; follow(true); focusBlend = 1; assistOff(); updateAssist(0, true); return s.y; },
+      place: (x, z) => { const s = drive ? (H.placeHook?.(x, z) ? { y: 0 } : null) : walk.surface(x, z); if (!s) return null; if (drive) H.driven = { ...(H.driven ?? {}), x, z, heading }; heroPos.set(x, s.y, z); sync(); moved = true; follow(true); focusBlend = 1; assistOff(); updateAssist(0, true); return s.y; },
       walkPath, walkMap, look, spots, buildMs, ready: true, // ready: the build is synchronous
       /** Can the lens see him? rays (of 3: thigh, chest, hat) a large piece blocks from the plain view and from the
        *  sight assist's current one, and the assist's offsets (deg). Walk a route with place() and read it. */
