@@ -6,6 +6,8 @@ parks, the lakes, landmarks and local spots, learning to read a map and find you
 Everything is built from [OpenStreetMap](https://www.openstreetmap.org), so the streets, buildings, parks and trees are
 where they really are.
 
+**▶ [Play it in your browser](https://resourcelab.github.io/norrebro-explorer/)** (a computer with a keyboard works best: arrow keys or WASD to walk, Z for the map)
+
 ![Assistens Kirkegård and Nørrebrogade, papercraft prototype](prototypes/assistens-paper-map/docs/2026-11-24-norrebrogade-side.png)
 
 **Status (November 2026):** early. The first playable slice is
@@ -15,7 +17,10 @@ The game core, landmarks and the final visual style are still to come (see the r
 
 ## Try it
 
-Download or clone the repo and double-click
+Play it in your browser at **[resourcelab.github.io/norrebro-explorer/](https://resourcelab.github.io/norrebro-explorer/)**. It is published automatically from `main` (see
+`.github/workflows/pages.yml`).
+
+Or download or clone the repo and double-click
 `prototypes/assistens-paper-map/dist/assistens-kirkegaard-paper-walk.html`. It is one self-contained file that runs
 offline in any modern browser. Arrow keys or WASD to walk, drag to look around.
 
@@ -52,7 +57,7 @@ norrebro-explorer/
 ├── NOTICE.md               OpenStreetMap (ODbL), papercraft and three.js credits
 ├── package.json            npm workspaces + repo scripts (lint, test, build, import)
 ├── eslint.config.js
-├── .github/workflows/      CI: lint, test, build on every push
+├── .github/workflows/      CI (lint, test, build on every push) and publishing the game to GitHub Pages
 ├── docs/
 │   ├── architecture.md     how data, core and style packs fit together
 │   └── style-exploration/  mockups and prompts for choosing the look

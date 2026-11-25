@@ -42,7 +42,7 @@ export function createPropPrints(H) {
  * A small brick shed or service building at its mapped spot, turned along its longest wall. Drawn at a standard size
  * (1.6-3.2 × 1.4 units) rather than the exact footprint: the real ones are tiny at this scale.
  */
-export function shed(H, popup, footprintUnits) {
+export function shed(H, popup, footprintUnits, scale = 1) {
   const pts = footprintUnits;
   const [cx, cz] = centroid(pts);
   // turn the shed along its longest wall, front toward the camera
@@ -65,5 +65,5 @@ export function shed(H, popup, footprintUnits) {
     h: 1.6, roof: 'pyramid', roofH: 0.9, paints: { wall: brick, roof: lidPaint('#5d5a55') }, paper: H.paper, seed: 60 + pts.length,
     print: H.cardOpts(cx, cz),
   });
-  return popup(null, null, { node, height: 2.5, x: cx, z: cz, yaw, level: true, solid: 1.3 });
+  return popup(null, null, { node, height: 2.5, x: cx, z: cz, yaw, level: true, solid: 1.3, scale });
 }

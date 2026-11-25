@@ -21,6 +21,12 @@ ORIGIN_LON, ORIGIN_LAT = 12.550529305405401, 55.690776421621614
 REGION = (-480, -440, 380, 430)
 # Simplification tolerances (metres): buildings, areas, street centre lines.
 EPS_BUILDING, EPS_AREA, EPS_STREET = 1.2, 1.0, 0.8
+# The context ring: everything in the world tiles outside REGION, simplified harder and flat only (no trees or props).
+# The minimap draws it, and the ground sheet prints it round the walkable area so the map view never shows bare paper.
+EPS_CONTEXT = 2.5
+CONTEXT_STREET_KINDS = {'primary', 'secondary', 'tertiary', 'residential', 'living_street', 'pedestrian', 'unclassified',
+                        'service', 'cycleway', 'busway'}
+CONTEXT_AREA_KINDS = {'water', 'park', 'grass', 'garden', 'pitch', 'playground', 'cemetery', 'square', 'wood', 'scrub'}
 
 
 def douglas_peucker(pts, eps):
@@ -59,6 +65,11 @@ def touches_region(pts):
     return any(x0 <= x <= x1 and y0 <= y <= y1 for x, y in pts)
 
 
+def inside_region(pts):
+    x0, y0, x1, y1 = REGION
+    return all(x0 <= x <= x1 and y0 <= y <= y1 for x, y in pts)
+
+
 def rounded(pts):
     return [[round(x), round(y)] for x, y in pts]
 
@@ -76,6 +87,11 @@ def extract(world_dir):
 
     seen = set()  # features cross tile edges, so the same id appears in several tiles
     out = {'region': REGION, 'buildings': [], 'streets': [], 'areas': [], 'trees': [], 'props': [], 'pois': []}
+    # the context ring: the whole imported area (prototype metres) and its flat features outside REGION
+    east, north = manifest['bboxLonLat'][2], manifest['bboxLonLat'][3]
+    out['context'] = {'bounds': [round(-dx), round(-dz), round((east - west) * kx - dx), round((north - south) * kz - dz)],
+                      'buildings': [], 'streets': [], 'areas': []}
+    ctx = out['context']
     trees = {}
 
     for key in manifest['tiles']:
@@ -85,6 +101,10 @@ def extract(world_dir):
                 continue
             seen.add(b['id'])
             pts = [to_prototype(p) for p in b['pts']]
+            if not inside_region(pts):
+                ring = simplify_ring(pts, EPS_CONTEXT)
+                if len(ring) >= 3:
+                    ctx['buildings'].append(rounded(ring))
             if not touches_region(pts):
                 continue
             ring = simplify_ring(pts, EPS_BUILDING)
@@ -95,6 +115,8 @@ def extract(world_dir):
                 continue
             seen.add(s['id'])
             pts = [to_prototype(p) for p in s['pts']]
+            if not inside_region(pts) and s['kind'] in CONTEXT_STREET_KINDS:
+                ctx['streets'].append({'name': s.get('name'), 'kind': s['kind'], 'width': s['width'], 'pts': rounded(douglas_peucker(pts, EPS_CONTEXT))})
             if touches_region(pts):
                 out['streets'].append({'name': s.get('name'), 'kind': s['kind'], 'width': s['width'], 'pts': rounded(douglas_peucker(pts, EPS_STREET))})
         for a in tile['areas']:
@@ -102,6 +124,10 @@ def extract(world_dir):
                 continue
             seen.add(a['id'])
             pts = [to_prototype(p) for p in a['pts']]
+            if not inside_region(pts) and a['kind'] in CONTEXT_AREA_KINDS:
+                ring = simplify_ring(pts, EPS_CONTEXT)
+                if len(ring) >= 3:
+                    ctx['areas'].append({'kind': a['kind'], 'name': a.get('name'), 'pts': rounded(ring)})
             if touches_region(pts) and a['kind'] != 'cemetery':  # the cemetery itself comes from assistens-osm.js
                 out['areas'].append({'kind': a['kind'], 'name': a.get('name'), 'pts': rounded(simplify_ring(pts, EPS_AREA))})
         for p in tile['trees']:
@@ -137,6 +163,7 @@ def main():
     data = extract(args.world_dir)
     write_module(data, args.out)
     counts = {k: len(v) for k, v in data.items() if isinstance(v, list)}
+    counts.update({'context.' + k: len(v) for k, v in data['context'].items() if k != 'bounds'})
     print(f'wrote {args.out}: {counts}, {os.path.getsize(args.out) // 1024} KB')
 
 

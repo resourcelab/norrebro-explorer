@@ -7,24 +7,25 @@
  *   plan/            where every piece stands (positions only, seeded)
  *   pieces/          how each kind of paper piece looks (prints, cuts, folds)
  *   world/           puts it together: the printed ground, the standing pieces, ambient life, traffic
- *   ui/              on-screen overlays (grave label, street sign)
+ *   ui/              on-screen overlays (place label, street sign, minimap and compass, zoom)
  *
  * Flow: harness → plan → print the ground → build the pieces → walking rules → life → overlays → start.
  */
 import { createHarness } from 'papercraft/harness.js';
-import { PALETTE, VIEW } from './config.js';
-import { REGION } from './map/neighbourhood.js';
+import { PALETTE, VIEW, WALK } from './config.js';
+import { REGION, SHEET } from './map/neighbourhood.js';
+import { NAMED_PLACES } from './map/landmarks.js';
 import { blocksWalker } from './map/walk.js';
 import { planWorld } from './plan/index.js';
 import { printGround } from './world/ground.js';
 import { buildWorld } from './world/build.js';
 import { startLife } from './world/life.js';
 import { startTraffic } from './world/traffic.js';
-import { attachGraveLabels } from './ui/grave-labels.js';
+import { attachPlaceLabels } from './ui/place-labels.js';
 import { attachStreetSign } from './ui/street-sign.js';
-
-/** Extra ground printed beyond the walkable region, so the edge of the sheet stays out of view. */
-const SHEET_MARGIN = 8;
+import { attachMinimap } from './ui/minimap.js';
+import { attachZoom } from './ui/zoom.js';
+import { isCaptureMode } from './ui/overlay.js';
 
 const H = createHarness({
   ground: PALETTE.ground,
@@ -32,8 +33,11 @@ const H = createHarness({
   play: true, // arrow keys / WASD walk without ?walk
   lens: { highlightBoost: 0 }, // no bokeh highlights (they flicker on some GPUs)
   view: VIEW,
-  bounds: { x0: REGION.x0 - SHEET_MARGIN, x1: REGION.x1 + SHEET_MARGIN, z0: REGION.z0 - SHEET_MARGIN, z1: REGION.z1 + SHEET_MARGIN },
+  bounds: { ...SHEET }, // the printed ground: the walkable region and a ring of context round it
   walkArea: { ...REGION },
+  heroHeight: WALK.heroHeight,
+  walkSpeed: WALK.speed,
+  runFactor: WALK.runFactor,
 });
 
 const plan = planWorld();
@@ -45,7 +49,9 @@ if (!H.flags.TEST) {
   startLife(H, creatures);
   startTraffic(H, riders);
 }
-attachGraveLabels(H, plan.notable);
+attachPlaceLabels(H, plan.notable, NAMED_PLACES);
 attachStreetSign(H);
+const zoom = attachZoom(H, { capture: isCaptureMode() });
+attachMinimap(H, { onClick: () => zoom.toggle() });
 
 H.start();

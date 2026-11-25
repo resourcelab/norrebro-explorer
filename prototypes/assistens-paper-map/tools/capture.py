@@ -17,6 +17,7 @@ Shots (default: overview):
     walk=X,Z;X,Z;...      a scripted walk from the start through the waypoints (blockers and steps apply), the camera
                           following; prints { reached, of, stuck, blockedBy, y, on }
     at=X,Z                the hero placed at (X, Z), the walking camera framing him (walk-area and fill edges)
+    stand=X,Z             as at=, then 3 s more so pieces that stand up near him (streaming) have risen
     hold=KEYS,SEC         from the start, hold keys (e.g. ArrowUp+ArrowLeft) for SEC seconds at 60 fps, live input
 Name a shot's file with NAME: before it (e.g. bridge:spot=bridge). Needs Playwright (pip install playwright; it uses
 your installed Chrome, or run `playwright install chromium`).
@@ -57,6 +58,9 @@ def plan(shot):
     if key == 'at':
         x, z = [float(t) for t in arg.split(',')]
         return name or f'at-{x:g}_{z:g}', '', base + f' const y = place({x}, {z}); step(0.5); return y;', 'at'
+    if key == 'stand':
+        x, z = [float(t) for t in arg.split(',')]
+        return name or f'stand-{x:g}_{z:g}', '', base + f' const y = place({x}, {z}); step(3.5); return y;', 'at'
     if key == 'hold':
         keys, _, sec = arg.partition(',')
         return name or 'hold', '', (keys.split('+'), float(sec or 1)), 'hold'
