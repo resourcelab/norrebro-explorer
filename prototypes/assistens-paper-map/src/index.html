@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Assistens Kirkegård — a paper walk</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="./styles.css">
+  <!-- dev: three.js from the CDN; "papercraft/" is the vendored kit. scripts/build.mjs inlines all of it. -->
+  <script type="importmap">
+    { "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js",
+        "papercraft/": "../vendor/papercraft/"
+    } }
+  </script>
+</head>
+<body>
+  <div class="credit">Layout © OpenStreetMap contributors · papercraft style by xikhar (MIT)</div>
+  <div class="hint" id="hint">arrows / WASD to walk · walk up to a grave to see who rests there · drag to look around · click to fold flat</div>
+  <script type="module" src="./main.js"></script>
+</body>
+</html>

@@ -1,0 +1,1896 @@
+{
+ "Hornbækgade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "0_7",
+   "0_8"
+  ]
+ },
+ "Hellebækgade": {
+  "kinds": [
+   "residential",
+   "service"
+  ],
+  "tiles": [
+   "0_5",
+   "0_6",
+   "0_7",
+   "1_5",
+   "1_6",
+   "1_7",
+   "0_3",
+   "0_4"
+  ]
+ },
+ "Hiort Lorenzens Gade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "0_9",
+   "1_9",
+   "1_10",
+   "2_9",
+   "2_10"
+  ]
+ },
+ "Krügersgade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "0_9",
+   "0_10",
+   "1_9",
+   "1_10"
+  ]
+ },
+ "Henrik Rungs Gade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "3_10",
+   "3_11"
+  ]
+ },
+ "Svanemosegårdsvej": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "5_12",
+   "5_13",
+   "5_14"
+  ]
+ },
+ "Kapelvej": {
+  "kinds": [
+   "residential",
+   "living_street"
+  ],
+  "tiles": [
+   "5_11",
+   "5_12",
+   "6_11",
+   "6_12",
+   "6_10",
+   "7_8",
+   "7_7",
+   "6_8",
+   "6_9",
+   "7_9",
+   "7_10",
+   "7_6",
+   "8_6",
+   "8_7"
+  ]
+ },
+ "Rantzausgade": {
+  "kinds": [
+   "residential",
+   "busway",
+   "cycleway",
+   "unclassified"
+  ],
+  "tiles": [
+   "2_9",
+   "2_10",
+   "3_9",
+   "3_10",
+   "4_9",
+   "4_10",
+   "2_8",
+   "1_8",
+   "4_11",
+   "4_12",
+   "5_10",
+   "5_11",
+   "5_12",
+   "6_10",
+   "6_11",
+   "6_12",
+   "7_10",
+   "7_11",
+   "7_12",
+   "7_13",
+   "8_12",
+   "8_13"
+  ]
+ },
+ "Steenwinkelsvej": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "4_14",
+   "5_14",
+   "6_14"
+  ]
+ },
+ "Adolph Steens Allé": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "6_13",
+   "7_13"
+  ]
+ },
+ "Korsgade": {
+  "kinds": [
+   "residential",
+   "living_street",
+   "footway",
+   "service"
+  ],
+  "tiles": [
+   "7_10",
+   "7_11",
+   "8_10",
+   "8_11",
+   "10_12",
+   "11_12",
+   "9_11",
+   "9_12",
+   "9_13",
+   "10_11",
+   "10_13",
+   "11_11",
+   "11_13"
+  ]
+ },
+ "L.I. Brandes Allé": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "0_13",
+   "0_14"
+  ]
+ },
+ "Ahlmannsgade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "1_9",
+   "1_10"
+  ]
+ },
+ "Laurids Skaus Gade": {
+  "kinds": [
+   "residential",
+   "path"
+  ],
+  "tiles": [
+   "2_8",
+   "2_9",
+   "2_10",
+   "2_11"
+  ]
+ },
+ "Hans Tavsens Gade": {
+  "kinds": [
+   "residential",
+   "cycleway",
+   "living_street"
+  ],
+  "tiles": [
+   "2_7",
+   "2_8",
+   "3_7",
+   "3_8",
+   "4_7",
+   "4_8",
+   "5_9",
+   "5_10",
+   "6_9",
+   "6_10",
+   "4_9",
+   "5_8"
+  ]
+ },
+ "Skyttegade": {
+  "kinds": [
+   "residential",
+   "cycleway",
+   "pedestrian"
+  ],
+  "tiles": [
+   "4_10",
+   "5_10",
+   "5_9"
+  ]
+ },
+ "Ågade": {
+  "kinds": [
+   "tertiary"
+  ],
+  "tiles": [
+   "0_6",
+   "0_7",
+   "0_8",
+   "0_9",
+   "0_10",
+   "0_11",
+   "1_9",
+   "1_10",
+   "1_11",
+   "2_9",
+   "2_10",
+   "2_11"
+  ]
+ },
+ "Griffenfeldsgade": {
+  "kinds": [
+   "residential",
+   "living_street"
+  ],
+  "tiles": [
+   "6_12",
+   "7_12",
+   "7_10",
+   "7_11",
+   "7_9",
+   "8_9",
+   "8_10",
+   "8_7",
+   "8_8",
+   "9_7",
+   "9_8",
+   "9_9"
+  ]
+ },
+ "Brohusgade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "3_11",
+   "3_12",
+   "3_10",
+   "4_10",
+   "4_11"
+  ]
+ },
+ "Ingemannsvej": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "3_12",
+   "3_13",
+   "3_14",
+   "4_12",
+   "4_13",
+   "4_14"
+  ]
+ },
+ "Jægergade": {
+  "kinds": [
+   "residential",
+   "living_street"
+  ],
+  "tiles": [
+   "5_11",
+   "4_12",
+   "5_12"
+  ]
+ },
+ "Bangertsgade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "7_8",
+   "8_8"
+  ]
+ },
+ "H.C. Ørsteds Vej": {
+  "kinds": [
+   "tertiary"
+  ],
+  "tiles": [
+   "6_12",
+   "5_13",
+   "5_14",
+   "6_13",
+   "6_14"
+  ]
+ },
+ "Humlebækgade": {
+  "kinds": [
+   "residential",
+   "footway"
+  ],
+  "tiles": [
+   "0_6",
+   "0_7",
+   "0_4",
+   "0_5"
+  ]
+ },
+ "Tjørnegade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "7_8",
+   "7_9",
+   "8_8",
+   "8_9"
+  ]
+ },
+ "Vævergade": {
+  "kinds": [
+   "living_street"
+  ],
+  "tiles": [
+   "7_9",
+   "8_9"
+  ]
+ },
+ "Rolighedsvej": {
+  "kinds": [
+   "tertiary",
+   "service"
+  ],
+  "tiles": [
+   "2_14",
+   "3_14",
+   "1_12",
+   "2_12",
+   "0_12",
+   "0_13",
+   "1_13",
+   "2_13",
+   "0_11",
+   "1_11"
+  ]
+ },
+ "N.J. Fjords Allé": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "0_13",
+   "0_14",
+   "1_13",
+   "1_14"
+  ]
+ },
+ "Den Grønne Sti": {
+  "kinds": [
+   "cycleway"
+  ],
+  "tiles": [
+   "0_13",
+   "0_14",
+   "1_13",
+   "1_14",
+   "2_13",
+   "2_14",
+   "2_12",
+   "2_11"
+  ]
+ },
+ "Struenseegade": {
+  "kinds": [
+   "residential",
+   "living_street"
+  ],
+  "tiles": [
+   "4_9",
+   "5_9",
+   "3_8",
+   "5_10",
+   "6_10",
+   "2_8",
+   "2_9",
+   "2_10",
+   "3_9",
+   "3_10",
+   "4_8",
+   "4_10",
+   "5_8"
+  ]
+ },
+ "Hans Tavsens Stien": {
+  "kinds": [
+   "cycleway"
+  ],
+  "tiles": [
+   "4_4",
+   "4_5",
+   "4_6",
+   "4_7",
+   "5_4",
+   "5_5",
+   "5_6",
+   "5_7",
+   "6_4",
+   "6_5",
+   "6_6",
+   "6_7"
+  ]
+ },
+ "Åbuen": {
+  "kinds": [
+   "cycleway"
+  ],
+  "tiles": [
+   "2_10",
+   "2_11"
+  ]
+ },
+ "Poppelalléen": {
+  "kinds": [
+   "cycleway",
+   "path"
+  ],
+  "tiles": [
+   "2_5",
+   "2_6",
+   "2_7",
+   "2_8",
+   "3_5",
+   "3_6",
+   "3_7",
+   "3_8",
+   "4_5",
+   "4_6",
+   "4_7",
+   "4_8",
+   "5_5",
+   "5_6",
+   "5_7",
+   "5_8",
+   "6_5",
+   "6_6",
+   "6_7",
+   "6_8",
+   "7_5",
+   "7_6",
+   "7_7",
+   "7_8"
+  ]
+ },
+ "Worsaaesvej": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "6_12",
+   "6_13",
+   "6_14",
+   "7_12",
+   "7_13",
+   "7_14"
+  ]
+ },
+ "Jesper Brochmands Gade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "2_9",
+   "2_10",
+   "3_9",
+   "3_10",
+   "3_8",
+   "4_8",
+   "4_9"
+  ]
+ },
+ "Florsgade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "1_8",
+   "1_9",
+   "2_8",
+   "2_9"
+  ]
+ },
+ "Hans Egedes Gade": {
+  "kinds": [
+   "residential",
+   "footway",
+   "cycleway"
+  ],
+  "tiles": [
+   "2_10",
+   "2_11",
+   "2_9",
+   "1_6",
+   "1_7",
+   "2_6",
+   "2_7",
+   "2_8"
+  ]
+ },
+ "Åboulevard": {
+  "kinds": [
+   "service",
+   "tertiary"
+  ],
+  "tiles": [
+   "4_12",
+   "5_12",
+   "2_11",
+   "6_12",
+   "7_12",
+   "7_13",
+   "8_12",
+   "8_13",
+   "2_12",
+   "3_11",
+   "3_12",
+   "4_11",
+   "5_11",
+   "6_11",
+   "9_13",
+   "9_14",
+   "8_14"
+  ]
+ },
+ "Falkoner Allé": {
+  "kinds": [
+   "tertiary"
+  ],
+  "tiles": [
+   "0_9",
+   "0_10"
+  ]
+ },
+ "Jagtvej": {
+  "kinds": [
+   "residential",
+   "path",
+   "tertiary"
+  ],
+  "tiles": [
+   "1_8",
+   "2_8",
+   "1_7",
+   "0_8",
+   "0_9",
+   "4_0",
+   "5_0",
+   "6_0",
+   "5_1",
+   "6_1",
+   "7_0",
+   "7_1",
+   "8_0",
+   "8_1",
+   "2_2",
+   "2_3",
+   "2_4",
+   "2_5",
+   "2_6",
+   "3_2",
+   "3_3",
+   "3_4",
+   "3_5",
+   "3_6",
+   "4_2",
+   "4_3",
+   "4_4",
+   "4_5",
+   "4_6",
+   "5_2",
+   "1_6"
+  ]
+ },
+ "Falkonergårdsvej": {
+  "kinds": [
+   "service",
+   "residential"
+  ],
+  "tiles": [
+   "0_11",
+   "0_12"
+  ]
+ },
+ "Borups Allé": {
+  "kinds": [
+   "tertiary"
+  ],
+  "tiles": [
+   "0_6",
+   "0_7",
+   "0_8",
+   "1_6",
+   "1_7",
+   "1_8"
+  ]
+ },
+ "Bülowsvej": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "3_12",
+   "3_13",
+   "3_14",
+   "2_14"
+  ]
+ },
+ "Rosenørns Allé": {
+  "kinds": [
+   "tertiary"
+  ],
+  "tiles": [
+   "3_14"
+  ]
+ },
+ "Gartnergade": {
+  "kinds": [
+   "living_street",
+   "residential"
+  ],
+  "tiles": [
+   "7_11",
+   "7_12",
+   "8_11",
+   "8_12"
+  ]
+ },
+ "Nuuks Plads": {
+  "kinds": [
+   "path"
+  ],
+  "tiles": [
+   "0_8",
+   "0_9",
+   "1_8",
+   "1_9"
+  ]
+ },
+ "Doktor Abildgaards Allé": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "0_13",
+   "0_14"
+  ]
+ },
+ "Gothersgade": {
+  "kinds": [
+   "tertiary"
+  ],
+  "tiles": [
+   "15_10",
+   "15_11"
+  ]
+ },
+ "Nørre Søgade": {
+  "kinds": [
+   "tertiary",
+   "service"
+  ],
+  "tiles": [
+   "12_12",
+   "12_13",
+   "12_14",
+   "13_12",
+   "13_13",
+   "13_14",
+   "14_12",
+   "14_13",
+   "14_14",
+   "15_12",
+   "15_13"
+  ]
+ },
+ "Sankt Hans Gade": {
+  "kinds": [
+   "residential",
+   "cycleway"
+  ],
+  "tiles": [
+   "12_6",
+   "12_7",
+   "13_6",
+   "13_7",
+   "14_6",
+   "14_7",
+   "14_8",
+   "15_8"
+  ]
+ },
+ "Julius Thomsens Gade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "8_13",
+   "8_14",
+   "9_13",
+   "9_14"
+  ]
+ },
+ "Jakob Dannefærds Vej": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "7_13",
+   "7_14",
+   "8_13",
+   "8_14"
+  ]
+ },
+ "Ewaldsgade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "10_14"
+  ]
+ },
+ "Thorupsgade": {
+  "kinds": [
+   "living_street",
+   "residential"
+  ],
+  "tiles": [
+   "11_13",
+   "10_13",
+   "10_14",
+   "11_14"
+  ]
+ },
+ "Wesselsgade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "11_12",
+   "11_10",
+   "11_11",
+   "12_10",
+   "12_11",
+   "12_12"
+  ]
+ },
+ "Baggesensgade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "9_9",
+   "9_10",
+   "9_11",
+   "10_9",
+   "10_10",
+   "10_11",
+   "11_9",
+   "11_10",
+   "11_11",
+   "12_9",
+   "12_10",
+   "12_11"
+  ]
+ },
+ "Slotsgade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "10_8",
+   "10_9"
+  ]
+ },
+ "Schleppegrellsgade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "14_7",
+   "15_7"
+  ]
+ },
+ "Ravnsborggade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "12_7",
+   "12_8",
+   "12_9",
+   "13_7",
+   "13_8",
+   "13_9",
+   "14_7",
+   "14_8",
+   "14_9"
+  ]
+ },
+ "Ravnsborg Tværgade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "13_8",
+   "13_9",
+   "14_8",
+   "14_9"
+  ]
+ },
+ "Blågårdsgade": {
+  "kinds": [
+   "residential",
+   "living_street"
+  ],
+  "tiles": [
+   "8_13",
+   "10_11",
+   "10_12",
+   "11_9",
+   "11_10",
+   "12_9",
+   "12_10",
+   "9_12",
+   "9_13",
+   "10_13",
+   "10_10",
+   "11_11"
+  ]
+ },
+ "Stengade": {
+  "kinds": [
+   "residential",
+   "service"
+  ],
+  "tiles": [
+   "9_8",
+   "9_9",
+   "10_8",
+   "10_9",
+   "8_9",
+   "8_10",
+   "9_10",
+   "8_11"
+  ]
+ },
+ "Sortedam Dossering": {
+  "kinds": [
+   "residential",
+   "cycleway"
+  ],
+  "tiles": [
+   "14_8",
+   "14_9",
+   "13_9",
+   "13_10",
+   "14_10",
+   "15_5",
+   "15_6",
+   "15_7",
+   "15_8",
+   "15_9"
+  ]
+ },
+ "Smedegade": {
+  "kinds": [
+   "living_street",
+   "residential"
+  ],
+  "tiles": [
+   "10_13",
+   "9_13",
+   "10_14"
+  ]
+ },
+ "Vendersgade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "15_12",
+   "15_13",
+   "14_12"
+  ]
+ },
+ "Fælledvej": {
+  "kinds": [
+   "tertiary"
+  ],
+  "tiles": [
+   "11_6",
+   "11_7",
+   "11_8",
+   "11_9",
+   "12_6",
+   "12_7",
+   "12_8",
+   "12_9"
+  ]
+ },
+ "Elmegade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "10_6",
+   "10_7",
+   "10_8",
+   "11_6",
+   "11_7",
+   "11_8",
+   "12_6"
+  ]
+ },
+ "Prins Jørgens Gade": {
+  "kinds": [
+   "living_street"
+  ],
+  "tiles": [
+   "8_9",
+   "9_9"
+  ]
+ },
+ "Tømrergade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "9_13",
+   "9_14",
+   "10_13",
+   "10_14"
+  ]
+ },
+ "Todesgade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "9_9",
+   "9_10",
+   "10_9",
+   "10_10"
+  ]
+ },
+ "Murergade": {
+  "kinds": [
+   "living_street"
+  ],
+  "tiles": [
+   "10_13"
+  ]
+ },
+ "Peblinge Dossering": {
+  "kinds": [
+   "cycleway",
+   "living_street"
+  ],
+  "tiles": [
+   "13_10",
+   "12_11",
+   "12_10",
+   "13_11",
+   "10_13",
+   "10_14",
+   "11_13",
+   "11_14",
+   "11_11",
+   "11_12",
+   "12_12",
+   "12_13"
+  ]
+ },
+ "Dronning Louises Bro": {
+  "kinds": [
+   "tertiary"
+  ],
+  "tiles": [
+   "13_10",
+   "14_10",
+   "14_11",
+   "15_10",
+   "15_11"
+  ]
+ },
+ "Søtorvet": {
+  "kinds": [
+   "tertiary"
+  ],
+  "tiles": [
+   "15_10",
+   "15_11",
+   "14_11",
+   "14_12",
+   "15_12"
+  ]
+ },
+ "Frederiksborggade": {
+  "kinds": [
+   "tertiary"
+  ],
+  "tiles": [
+   "15_11"
+  ]
+ },
+ "Charlotte Ammundsens Plads": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "14_14",
+   "15_14"
+  ]
+ },
+ "Nørrebrogade": {
+  "kinds": [
+   "tertiary",
+   "living_street",
+   "residential"
+  ],
+  "tiles": [
+   "11_8",
+   "11_9",
+   "13_9",
+   "13_10",
+   "12_9",
+   "9_7",
+   "9_8",
+   "10_7",
+   "10_8",
+   "8_6",
+   "8_7",
+   "9_6",
+   "3_0",
+   "3_1",
+   "3_2",
+   "4_0",
+   "4_1",
+   "4_2",
+   "5_2",
+   "6_4",
+   "5_3",
+   "5_4",
+   "6_3",
+   "2_0",
+   "6_5",
+   "6_6",
+   "7_4",
+   "7_5",
+   "7_6",
+   "8_4",
+   "8_5"
+  ]
+ },
+ "Solitudevej": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "8_6",
+   "8_7"
+  ]
+ },
+ "Fælledvejens Passage": {
+  "kinds": [
+   "service"
+  ],
+  "tiles": [
+   "12_7",
+   "13_7"
+  ]
+ },
+ "Sankt Hans Gades Passage": {
+  "kinds": [
+   "service"
+  ],
+  "tiles": [
+   "12_7",
+   "13_7"
+  ]
+ },
+ "Blågårds Plads": {
+  "kinds": [
+   "pedestrian"
+  ],
+  "tiles": [
+   "9_10",
+   "9_11",
+   "10_10",
+   "10_11"
+  ]
+ },
+ "Ahlefeldtsgade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "15_14"
+  ]
+ },
+ "Ryesgade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "14_6",
+   "14_7",
+   "14_4",
+   "14_5",
+   "15_4",
+   "15_5",
+   "15_6"
+  ]
+ },
+ "Nansensgade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "15_14",
+   "15_13"
+  ]
+ },
+ "Birkegade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "10_6",
+   "10_7",
+   "10_5",
+   "11_5",
+   "11_6"
+  ]
+ },
+ "Gilbjerggade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "0_6",
+   "1_6"
+  ]
+ },
+ "Skotterupgade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "0_5",
+   "0_6"
+  ]
+ },
+ "Stefansgade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "0_3",
+   "0_4",
+   "0_5",
+   "0_6",
+   "0_2",
+   "1_2",
+   "1_3",
+   "1_1",
+   "1_0",
+   "2_0"
+  ]
+ },
+ "Krogerupgade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "0_0",
+   "0_1",
+   "0_2",
+   "0_3"
+  ]
+ },
+ "Stevnsgade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "6_1",
+   "6_2",
+   "6_3",
+   "7_1",
+   "7_2",
+   "7_3",
+   "6_0"
+  ]
+ },
+ "Hørsholmsgade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "0_3",
+   "0_4",
+   "0_5",
+   "0_6",
+   "1_3",
+   "1_4",
+   "1_5",
+   "1_6",
+   "2_3",
+   "2_4",
+   "2_5",
+   "2_6"
+  ]
+ },
+ "Kronborggade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "0_3",
+   "0_4",
+   "0_5",
+   "1_3",
+   "1_4",
+   "1_5",
+   "2_3",
+   "2_4",
+   "2_5"
+  ]
+ },
+ "Jægersborggade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "0_2",
+   "0_3",
+   "0_4",
+   "0_5",
+   "1_2",
+   "1_3",
+   "1_4",
+   "1_5",
+   "2_2",
+   "2_3",
+   "2_4",
+   "2_5"
+  ]
+ },
+ "Bjelkes Allé": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "1_2",
+   "1_3",
+   "1_4",
+   "1_5",
+   "2_2",
+   "2_3",
+   "2_4",
+   "2_5",
+   "3_2",
+   "3_3",
+   "3_4",
+   "3_5"
+  ]
+ },
+ "Husumgade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "1_1",
+   "1_2",
+   "1_3",
+   "1_4",
+   "2_1",
+   "2_2",
+   "2_3",
+   "2_4",
+   "3_1",
+   "3_2",
+   "3_3",
+   "3_4"
+  ]
+ },
+ "Julius Bloms Gade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "1_1",
+   "1_2",
+   "1_3",
+   "2_1",
+   "2_2",
+   "2_3",
+   "3_1",
+   "3_2",
+   "3_3",
+   "4_2"
+  ]
+ },
+ "Søllerødgade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "1_0",
+   "1_1",
+   "1_2",
+   "2_0",
+   "2_1",
+   "2_2",
+   "3_0",
+   "3_1",
+   "3_2"
+  ]
+ },
+ "Heinesgade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "3_1",
+   "3_2"
+  ]
+ },
+ "Thorsgade": {
+  "kinds": [
+   "residential",
+   "service"
+  ],
+  "tiles": [
+   "3_0",
+   "3_1",
+   "4_0",
+   "4_1"
+  ]
+ },
+ "Uffesgade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "4_1"
+  ]
+ },
+ "Frederik VII's Gade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "7_4",
+   "7_5"
+  ]
+ },
+ "Prinsesse Charlottes Gade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "5_1",
+   "5_2",
+   "5_3",
+   "6_1",
+   "6_2",
+   "6_3",
+   "7_1",
+   "7_2",
+   "7_3",
+   "7_4",
+   "8_4"
+  ]
+ },
+ "Meinungsgade": {
+  "kinds": [
+   "residential",
+   "service"
+  ],
+  "tiles": [
+   "7_3",
+   "7_4",
+   "7_5",
+   "8_3",
+   "8_4",
+   "8_5",
+   "9_3",
+   "9_4",
+   "9_5"
+  ]
+ },
+ "Vedbækgade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "1_0",
+   "2_0"
+  ]
+ },
+ "Nordbanegade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "1_1",
+   "1_0"
+  ]
+ },
+ "Sorgenfrigade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "2_0",
+   "2_1",
+   "3_0",
+   "3_1"
+  ]
+ },
+ "Holtegade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "2_1",
+   "2_0",
+   "3_0",
+   "3_1"
+  ]
+ },
+ "Fyensgade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "5_2",
+   "6_2"
+  ]
+ },
+ "Asnæsgade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "6_1",
+   "7_1"
+  ]
+ },
+ "Udbygade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "7_1",
+   "7_2"
+  ]
+ },
+ "Nivågade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "0_5"
+  ]
+ },
+ "Nærumgade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "0_3"
+  ]
+ },
+ "Lynæsgade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "7_1",
+   "7_2",
+   "8_1",
+   "8_2"
+  ]
+ },
+ "Sjællandsgade": {
+  "kinds": [
+   "pedestrian",
+   "residential",
+   "service"
+  ],
+  "tiles": [
+   "7_3",
+   "6_3",
+   "6_4",
+   "7_4",
+   "7_2",
+   "10_0",
+   "9_0",
+   "9_1",
+   "10_1",
+   "8_1",
+   "8_2",
+   "9_2",
+   "11_0",
+   "12_0"
+  ]
+ },
+ "Fensmarkgade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "5_0",
+   "5_1",
+   "6_0",
+   "6_1",
+   "7_0",
+   "7_1",
+   "8_0",
+   "8_1",
+   "9_0",
+   "9_1",
+   "10_0",
+   "10_1",
+   "11_0",
+   "11_1"
+  ]
+ },
+ "Guldbergsgade": {
+  "kinds": [
+   "residential",
+   "service"
+  ],
+  "tiles": [
+   "7_0",
+   "7_1",
+   "7_2",
+   "8_0",
+   "8_1",
+   "8_2",
+   "8_3",
+   "9_2",
+   "9_3",
+   "10_5",
+   "10_6",
+   "11_5",
+   "11_6",
+   "8_4",
+   "8_5",
+   "9_4",
+   "9_5",
+   "12_6",
+   "10_3",
+   "10_4"
+  ]
+ },
+ "Allersgade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "3_0",
+   "2_0"
+  ]
+ },
+ "Refsnæsgade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "9_0",
+   "9_1"
+  ]
+ },
+ "Møllegade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "9_5",
+   "9_6",
+   "10_5",
+   "10_6",
+   "10_4",
+   "10_3",
+   "11_3",
+   "11_4",
+   "8_6",
+   "11_2",
+   "12_2",
+   "12_3"
+  ]
+ },
+ "Hans Kirks Vej": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "10_2",
+   "11_2",
+   "12_2"
+  ]
+ },
+ "Henrik Pontoppidans Vej": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "12_1",
+   "12_2"
+  ]
+ },
+ "Alléen": {
+  "kinds": [
+   "residential",
+   "service"
+  ],
+  "tiles": [
+   "10_1",
+   "11_1",
+   "12_1"
+  ]
+ },
+ "Edith Rodes Vej": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "10_0",
+   "10_1",
+   "10_2",
+   "10_3",
+   "11_0",
+   "11_1",
+   "11_2",
+   "11_3"
+  ]
+ },
+ "Peter Fabers Gade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "8_4",
+   "8_5",
+   "8_6",
+   "9_4",
+   "9_5",
+   "9_6",
+   "10_4",
+   "10_5",
+   "10_6"
+  ]
+ },
+ "Læssøesgade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "13_5",
+   "13_6",
+   "14_5",
+   "14_6",
+   "14_7",
+   "15_6",
+   "15_7"
+  ]
+ },
+ "Nøddebogade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "9_0",
+   "10_0"
+  ]
+ },
+ "Tibirkegade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "8_0",
+   "8_1"
+  ]
+ },
+ "Thit Jensens Vej": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "11_0",
+   "11_1",
+   "12_0",
+   "12_1"
+  ]
+ },
+ "Poppelgade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "10_4",
+   "10_5",
+   "11_4",
+   "11_5"
+  ]
+ },
+ "Ahornsgade": {
+  "kinds": [
+   "living_street",
+   "residential"
+  ],
+  "tiles": [
+   "12_4",
+   "12_5",
+   "11_5"
+  ]
+ },
+ "Nørre Sideallé": {
+  "kinds": [
+   "service",
+   "living_street"
+  ],
+  "tiles": [
+   "11_3",
+   "12_3"
+  ]
+ },
+ "Egegade": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "10_6",
+   "11_6"
+  ]
+ },
+ "Esther Møllers Vej": {
+  "kinds": [
+   "service"
+  ],
+  "tiles": [
+   "14_0",
+   "15_0"
+  ]
+ },
+ "Juliane Maries Vej": {
+  "kinds": [
+   "unclassified"
+  ],
+  "tiles": [
+   "14_0",
+   "14_1",
+   "14_2",
+   "15_0",
+   "15_1",
+   "15_2",
+   "13_0"
+  ]
+ },
+ "Nørre Allé": {
+  "kinds": [
+   "tertiary",
+   "living_street",
+   "busway"
+  ],
+  "tiles": [
+   "12_6",
+   "12_3",
+   "12_4",
+   "12_5",
+   "13_0",
+   "12_0",
+   "12_1",
+   "12_2",
+   "11_4"
+  ]
+ },
+ "Blegdamsvej": {
+  "kinds": [
+   "tertiary",
+   "residential"
+  ],
+  "tiles": [
+   "15_3",
+   "14_4",
+   "14_5",
+   "15_4",
+   "15_5",
+   "12_3",
+   "12_4",
+   "12_5",
+   "12_6",
+   "13_3",
+   "13_4",
+   "13_5",
+   "13_6",
+   "14_3",
+   "14_6",
+   "15_6"
+  ]
+ },
+ "Tagensvej": {
+  "kinds": [
+   "tertiary",
+   "busway"
+  ],
+  "tiles": [
+   "12_0",
+   "12_1",
+   "12_2",
+   "13_0",
+   "13_1",
+   "13_2",
+   "14_0",
+   "14_1",
+   "14_2",
+   "15_0",
+   "15_1",
+   "15_2",
+   "13_3",
+   "14_3",
+   "15_3",
+   "11_0"
+  ]
+ },
+ "Agnes Henningsens Vej": {
+  "kinds": [
+   "service"
+  ],
+  "tiles": [
+   "9_2",
+   "10_2"
+  ]
+ },
+ "Guldbergs Have": {
+  "kinds": [
+   "residential"
+  ],
+  "tiles": [
+   "9_1",
+   "9_2",
+   "8_1",
+   "8_2"
+  ]
+ },
+ "Sankt Hans Torv": {
+  "kinds": [
+   "residential",
+   "tertiary"
+  ],
+  "tiles": [
+   "12_6"
+  ]
+ }
+}

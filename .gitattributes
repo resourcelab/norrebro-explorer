@@ -1,0 +1,12 @@
+# normalise line endings
+* text=auto eol=lf
+
+# binaries
+*.png binary
+*.jpg binary
+
+# generated files: collapsed in diffs and left out of GitHub's language stats
+prototypes/*/dist/** linguist-generated=true -diff
+prototypes/*/src/data/surroundings.js linguist-generated=true
+prototypes/*/vendor/** linguist-vendored=true
+data/** linguist-generated=true

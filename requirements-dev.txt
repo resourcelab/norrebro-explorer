@@ -1,0 +1,4 @@
+# Python tools (optional): world previews, data extraction, review screenshots
+#   pip install -r requirements-dev.txt && playwright install chromium
+pillow>=10
+playwright>=1.45

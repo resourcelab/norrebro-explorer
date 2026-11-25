@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Nørrebro Explorer — style mockup</title>
+<style>html,body{margin:0;background:#222}canvas{display:block}</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+// Style mockups drawn from the real world tiles (test window: Dronning Louises Bro -> Nørrebrogade -> Sankt Hans Torv).
+// ?style=illustrated | pixel
+const STYLE = new URLSearchParams(location.search).get('style') || 'illustrated';
+const hash = (s) => { let h = 2166136261; for (const ch of String(s)) h = Math.imul(h ^ ch.charCodeAt(0), 16777619); return (h >>> 0) / 4294967296; };
+const rng = (seed) => () => ((seed = Math.imul(seed ^ (seed >>> 15), 2246822507) + 0x9e3779b9 >>> 0) / 4294967296);
+
+fetch('window.json').then((r) => r.json()).then((W) => (STYLE === 'pixel' ? pixel(W) : illustrated(W)));
+
+// ---------------------------------------------------------------------------------------------------------------------
+function illustrated(W) {
+  const [X0, Z0, X1, Z1] = W.win, S = 4, c = document.getElementById('c');
+  c.width = (X1 - X0) * S; c.height = (Z1 - Z0) * S;
+  const g = c.getContext('2d'), r = rng(7);
+  const P = ([x, z]) => [(x - X0) * S, (z - Z0) * S];
+  const wob = (pts, a = 1.2) => pts.map(([x, z], i) => [x + (hash(i + 'x' + x) - 0.5) * a, z + (hash(i + 'z' + z) - 0.5) * a]);
+  const path = (pts, close = true) => { g.beginPath(); pts.forEach((p, i) => { const [x, y] = P(p); i ? g.lineTo(x, y) : g.moveTo(x, y); }); if (close) g.closePath(); };
+
+  // paper
+  g.fillStyle = '#efe5cf'; g.fillRect(0, 0, c.width, c.height);
+  for (let k = 0; k < 9000; k++) { g.fillStyle = `rgba(120,90,50,${0.03 + r() * 0.04})`; g.fillRect(r() * c.width, r() * c.height, 1 + r() * 2, 1); }
+
+  // areas
+  const AC = { water: '#8cbcd2', park: '#b4d197', grass: '#bfd8a0', garden: '#b4d197', playground: '#ecd59a', pitch: '#a5d08f', square: '#e6dbc2', parking: '#ddd5c4', schoolyard: '#e8dcc0', cemetery: '#a9c98e', wood: '#97ba7c', scrub: '#a9c38b', flowerbed: '#e3b9c5' };
+  for (const kind of ['parking', 'schoolyard', 'square', 'park', 'grass', 'garden', 'wood', 'scrub', 'pitch', 'playground', 'flowerbed', 'water']) {
+    for (const a of W.areas.filter((a) => a.kind === kind)) {
+      path(wob(a.pts, 0.8)); g.fillStyle = AC[kind]; g.fill();
+      if (kind === 'water') { g.save(); g.clip(); g.strokeStyle = 'rgba(255,255,255,0.55)'; g.lineWidth = 2; for (let k = 0; k < 160; k++) { const x = r() * c.width, y = r() * c.height; g.beginPath(); g.moveTo(x, y); g.quadraticCurveTo(x + 10, y - 5, x + 20, y); g.quadraticCurveTo(x + 30, y + 5, x + 40, y); g.stroke(); } g.restore(); g.strokeStyle = '#6a9cb4'; g.lineWidth = 3; path(wob(a.pts, 0.8)); g.stroke(); }
+      if (['park', 'grass', 'garden'].includes(kind)) { g.save(); path(a.pts); g.clip(); g.strokeStyle = 'rgba(80,120,60,0.35)'; g.lineWidth = 1.5; for (let k = 0; k < 900; k++) { const x = r() * c.width, y = r() * c.height; g.beginPath(); g.moveTo(x, y); g.lineTo(x + 2, y - 5); g.stroke(); } g.restore(); }
+    }
+  }
+  // streets: pavement, road, centre line
+  const roads = W.streets.slice().sort((a, b) => a.width - b.width);
+  const line = (pts, w, col, dash) => { g.strokeStyle = col; g.lineWidth = w; g.lineCap = 'round'; g.lineJoin = 'round'; g.setLineDash(dash || []); path(pts, false); g.stroke(); g.setLineDash([]); };
+  for (const s of roads) if (s.width >= 5) line(s.pts, (s.width + 6) * S, '#e9dcc0');
+  for (const s of roads) if (s.width >= 5) line(s.pts, (s.width + 0.6) * S, '#a89f8c');
+  for (const s of roads) if (s.width >= 5) line(s.pts, s.width * S, s.kind === 'pedestrian' ? '#eadfc6' : '#d6cfc2');
+  for (const s of roads) if (s.width >= 10) line(s.pts, 2, '#fbf6ea', [14, 12]);
+  for (const s of roads) if (s.width < 5) line(s.pts, s.width * S, s.kind === 'cycleway' ? '#c9d6dc' : '#f5ecd6', s.kind === 'footway' || s.kind === 'path' ? null : null);
+  // buildings: shadow, roof, ridge, outline
+  const ROOFS = ['#c4654a', '#b9583f', '#7b8790', '#d3a35a', '#c77a52', '#8a9aa0', '#d8b06a'];
+  for (const b of W.buildings) { g.save(); g.translate(7, 9); path(wob(b.pts)); g.fillStyle = 'rgba(70,45,30,0.28)'; g.fill(); g.restore(); }
+  for (const b of W.buildings) {
+    const roof = ROOFS[Math.floor(hash(b.id) * ROOFS.length)];
+    path(wob(b.pts)); g.fillStyle = roof; g.fill();
+    // a lighter inset (the sunlit slope) and a ridge
+    const cx = b.pts.reduce((s, p) => s + p[0], 0) / b.pts.length, cz = b.pts.reduce((s, p) => s + p[1], 0) / b.pts.length;
+    const inset = b.pts.map(([x, z]) => [cx + (x - cx) * 0.72, cz + (z - cz) * 0.72]);
+    path(inset); g.fillStyle = 'rgba(255,240,215,0.18)'; g.fill();
+    g.strokeStyle = 'rgba(60,35,25,0.35)'; g.lineWidth = 1.5; g.stroke();
+    path(wob(b.pts)); g.strokeStyle = '#5b3c2c'; g.lineWidth = 2.5; g.stroke();
+  }
+  // trees
+  for (const [x, z] of W.trees) { const [px, py] = P([x, z]), rr = 15 + hash(x + 'r' + z) * 6;
+    g.fillStyle = 'rgba(60,50,30,0.25)'; g.beginPath(); g.ellipse(px + 7, py + 9, rr, rr * 0.9, 0, 0, 7); g.fill();
+    g.fillStyle = hash(z + 'c') < 0.5 ? '#6f9e52' : '#7fae5a'; g.beginPath(); g.arc(px, py, rr, 0, 7); g.fill();
+    g.fillStyle = 'rgba(230,240,170,0.45)'; g.beginPath(); g.arc(px - rr * 0.3, py - rr * 0.35, rr * 0.45, 0, 7); g.fill();
+    g.strokeStyle = '#3f5a2f'; g.lineWidth = 2; g.beginPath(); g.arc(px, py, rr, 0, 7); g.stroke(); }
+  // props: benches and bike racks
+  for (const [x, z, k] of W.props) { const [px, py] = P([x, z]); if (k === 'bench') { g.fillStyle = '#7a5a3a'; g.fillRect(px - 7, py - 3, 14, 6); } if (k === 'bikes') { g.strokeStyle = '#4b6a80'; g.lineWidth = 2; for (let i = 0; i < 3; i++) { g.beginPath(); g.arc(px - 6 + i * 6, py, 3, 0, 7); g.stroke(); } } }
+  // spots: round pins by category
+  const PIN = { food: '#e07a3f', culture: '#8a5cc2', history: '#a0522d', play: '#e2b33c', everyday: '#3f7fb5', nature: '#4f9a52' };
+  for (const p of W.pois) { if (!PIN[p.category]) continue; const [px, py] = P([p.x, p.z]); g.fillStyle = '#fffaf0'; g.beginPath(); g.arc(px, py, 9, 0, 7); g.fill(); g.fillStyle = PIN[p.category]; g.beginPath(); g.arc(px, py, 6.5, 0, 7); g.fill(); }
+  // street names along each named street's longest segment
+  labels(g, W, P, { font: 'italic 600 22px Georgia, serif', fill: '#3d2e22', halo: '#f6eedc' });
+  // the walker: a child in a yellow raincoat, seen from above, on the bridge
+  const hero = W.streets.find((s) => s.name === 'Dronning Louises Bro'); const hp = P(hero.pts[Math.floor(hero.pts.length / 2)]);
+  g.fillStyle = 'rgba(60,40,20,0.3)'; g.beginPath(); g.ellipse(hp[0] + 6, hp[1] + 8, 16, 13, 0, 0, 7); g.fill();
+  g.fillStyle = '#f2c230'; g.beginPath(); g.ellipse(hp[0], hp[1], 15, 12, 0, 0, 7); g.fill(); g.strokeStyle = '#6b4a10'; g.lineWidth = 2.5; g.stroke();
+  g.fillStyle = '#e9b95a'; g.beginPath(); g.arc(hp[0], hp[1] - 2, 8, 0, 7); g.fill(); g.stroke();
+  g.fillStyle = '#fff6dc'; g.fillRect(hp[0] + 8, hp[1] - 4, 14, 10); g.strokeRect(hp[0] + 8, hp[1] - 4, 14, 10);
+  compass(g, c.width - 90, 90, 56);
+}
+
+function compass(g, x, y, r) {
+  g.save(); g.translate(x, y);
+  g.fillStyle = 'rgba(255,250,235,0.92)'; g.beginPath(); g.arc(0, 0, r, 0, 7); g.fill(); g.strokeStyle = '#5b3c2c'; g.lineWidth = 3; g.stroke();
+  g.fillStyle = '#c4523a'; g.beginPath(); g.moveTo(0, -r * 0.8); g.lineTo(r * 0.2, 0); g.lineTo(-r * 0.2, 0); g.closePath(); g.fill();
+  g.fillStyle = '#5b3c2c'; g.beginPath(); g.moveTo(0, r * 0.8); g.lineTo(r * 0.2, 0); g.lineTo(-r * 0.2, 0); g.closePath(); g.fill();
+  g.font = 'bold 20px Georgia, serif'; g.textAlign = 'center'; g.fillStyle = '#3d2e22'; g.fillText('N', 0, -r - 8);
+  g.restore();
+}
+
+function labels(g, W, P, { font, fill, halo, pixel }) {
+  const byName = {};
+  for (const s of W.streets) { if (!s.name || s.width < 2.5) continue; for (let i = 0; i < s.pts.length - 1; i++) { const a = P(s.pts[i]), b = P(s.pts[i + 1]), L = Math.hypot(b[0] - a[0], b[1] - a[1]); if (!byName[s.name] || L > byName[s.name].L) byName[s.name] = { a, b, L }; } }
+  g.font = font; g.textAlign = 'center'; g.textBaseline = 'middle';
+  for (const [name, { a, b, L }] of Object.entries(byName)) {
+    const w = g.measureText(name).width; if (w > L * 0.95) continue;
+    let ang = Math.atan2(b[1] - a[1], b[0] - a[0]); if (ang > Math.PI / 2) ang -= Math.PI; if (ang < -Math.PI / 2) ang += Math.PI;
+    g.save(); g.translate((a[0] + b[0]) / 2, (a[1] + b[1]) / 2); g.rotate(ang);
+    if (halo) { g.strokeStyle = halo; g.lineWidth = pixel ? 3 : 6; g.lineJoin = 'round'; g.strokeText(name, 0, 0); }
+    g.fillStyle = fill; g.fillText(name, 0, 0); g.restore();
+  }
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+function pixel(W) {
+  const [X0, Z0, X1, Z1] = W.win, S = 1, UP = 4, c = document.getElementById('c');
+  const lo = document.createElement('canvas'); lo.width = (X1 - X0) * S; lo.height = (Z1 - Z0) * S;
+  const g = lo.getContext('2d'), r = rng(3);
+  const P = ([x, z]) => [Math.round((x - X0) * S), Math.round((z - Z0) * S)];
+  const path = (pts, close = true) => { g.beginPath(); pts.forEach((p, i) => { const [x, y] = P(p); i ? g.lineTo(x, y) : g.moveTo(x, y); }); if (close) g.closePath(); };
+  const PAL = { grassA: '#5fa045', grassB: '#4e8c3b', water: '#3b78b5', waterB: '#2f64a0', sparkle: '#a8d8f0', road: '#6e6a72', roadB: '#5d5962', pave: '#c9bfa8', paveB: '#b3a88f', line: '#f0e6c8', sand: '#e0c070',
+    roofs: [['#b4462f', '#e07052', '#7a2c1e'], ['#5f6d7a', '#8a99a8', '#3a434d'], ['#c98a3a', '#ecb35e', '#8a5a20'], ['#9c4a3a', '#c86a50', '#622a1e']], tree: '#2f7a3a', treeL: '#58a84a', treeD: '#1e5228', out: '#2a1f22', hero: '#f8d030', bench: '#7a4a2a' };
+
+  g.fillStyle = PAL.pave; g.fillRect(0, 0, lo.width, lo.height);
+  for (const a of W.areas) {
+    const col = a.kind === 'water' ? PAL.water : a.kind === 'playground' ? PAL.sand : ['square', 'parking', 'schoolyard'].includes(a.kind) ? PAL.paveB : PAL.grassA;
+    path(a.pts); g.fillStyle = col; g.fill();
+  }
+  for (const s of W.streets) { if (s.width < 5) continue; g.strokeStyle = PAL.road; g.lineWidth = s.width * S; g.lineCap = 'butt'; g.lineJoin = 'miter'; path(s.pts, false); g.stroke(); }
+  for (const s of W.streets) { if (s.width >= 5) continue; g.strokeStyle = s.kind === 'cycleway' ? PAL.roadB : PAL.paveB; g.lineWidth = Math.max(1, s.width * S); path(s.pts, false); g.stroke(); }
+  for (const s of W.streets) { if (s.width < 10) continue; g.strokeStyle = PAL.line; g.lineWidth = 1; g.setLineDash([3, 3]); path(s.pts, false); g.stroke(); g.setLineDash([]); }
+  // buildings: flat roof colour, lit top edge, dark bottom edge (a 3/4 hint), 1 px outline
+  for (const b of W.buildings) {
+    const [base, lit, dark] = PAL.roofs[Math.floor(hash(b.id) * PAL.roofs.length)];
+    g.save(); g.translate(1, 2); path(b.pts); g.fillStyle = PAL.out; g.fill(); g.restore();
+    path(b.pts); g.fillStyle = base; g.fill();
+    g.save(); path(b.pts); g.clip(); g.translate(0, 1.5); path(b.pts); g.lineWidth = 2; g.strokeStyle = lit; g.stroke(); g.restore();
+    path(b.pts); g.strokeStyle = PAL.out; g.lineWidth = 1; g.stroke();
+  }
+  for (const [x, z] of W.trees) { const [px, py] = P([x, z]); g.fillStyle = PAL.treeD; g.fillRect(px - 2, py - 1, 6, 5); g.fillStyle = PAL.tree; g.fillRect(px - 3, py - 3, 6, 6); g.fillRect(px - 2, py - 4, 4, 8); g.fillStyle = PAL.treeL; g.fillRect(px - 2, py - 3, 2, 2); }
+  for (const [x, z, k] of W.props) { const [px, py] = P([x, z]); if (k === 'bench') { g.fillStyle = PAL.bench; g.fillRect(px - 1, py, 3, 1); } }
+
+  // snap every pixel to the palette, so no anti-aliasing survives: crisp pixels
+  const flat = [PAL.grassA, PAL.grassB, PAL.water, PAL.waterB, PAL.sparkle, PAL.road, PAL.roadB, PAL.pave, PAL.paveB, PAL.line, PAL.sand, PAL.tree, PAL.treeL, PAL.treeD, PAL.out, PAL.bench, ...PAL.roofs.flat()].map((h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]);
+  const img = g.getImageData(0, 0, lo.width, lo.height), d = img.data;
+  const water = [0x3b, 0x78, 0xb5], grass = [0x5f, 0xa0, 0x45];
+  for (let i = 0; i < d.length; i += 4) {
+    let best = 0, bd = 1e9; for (let k = 0; k < flat.length; k++) { const q = flat[k], dd = (d[i] - q[0]) ** 2 + (d[i + 1] - q[1]) ** 2 + (d[i + 2] - q[2]) ** 2; if (dd < bd) { bd = dd; best = k; } }
+    let q = flat[best]; const px = (i / 4) % lo.width, py = Math.floor(i / 4 / lo.width);
+    if (q === flat[2] && (px + py * 3) % 7 === 0) q = flat[3];                 // water ripple dither
+    if (q === flat[2] && hash(px + ',' + py) < 0.012) q = flat[4];            // sparkles
+    if (q === flat[0] && hash(py + '.' + px) < 0.18) q = flat[1];             // grass texture
+    d[i] = q[0]; d[i + 1] = q[1]; d[i + 2] = q[2]; d[i + 3] = 255;
+  }
+  g.putImageData(img, 0, 0);
+  // the walker on the bridge: a 4 x 6 px kid in a yellow raincoat
+  const hero = W.streets.find((s) => s.name === 'Dronning Louises Bro'); const [hx, hy] = P(hero.pts[Math.floor(hero.pts.length / 2)]);
+  g.fillStyle = PAL.out; g.fillRect(hx - 2, hy - 3, 6, 8); g.fillStyle = PAL.hero; g.fillRect(hx - 1, hy - 1, 4, 5); g.fillStyle = '#f0c8a0'; g.fillRect(hx - 1, hy - 3, 4, 2);
+
+  c.width = lo.width * UP; c.height = lo.height * UP;
+  const G = c.getContext('2d'); G.imageSmoothingEnabled = false; G.drawImage(lo, 0, 0, c.width, c.height);
+  // street names in a blocky pixel font: drawn small, then scaled up without smoothing
+  const tl = document.createElement('canvas'); tl.width = lo.width; tl.height = lo.height; const tg = tl.getContext('2d');
+  labels(tg, W, P, { font: 'bold 7px monospace', fill: '#fff6d8', halo: '#2a1f22', pixel: true });
+  const ti = tg.getImageData(0, 0, tl.width, tl.height); for (let i = 3; i < ti.data.length; i += 4) ti.data[i] = ti.data[i] > 110 ? 255 : 0; tg.putImageData(ti, 0, 0);
+  G.drawImage(tl, 0, 0, c.width, c.height);
+  // a pixel compass
+  G.fillStyle = '#2a1f22'; G.fillRect(c.width - 120, 40, 80, 80); G.fillStyle = '#fff6d8'; G.fillRect(c.width - 116, 44, 72, 72);
+  G.fillStyle = '#b4462f'; for (let k = 0; k < 4; k++) G.fillRect(c.width - 84 - k * 4, 76 + k * 8, 8 + k * 8, 8);
+  G.fillStyle = '#2a1f22'; G.font = 'bold 26px monospace'; G.textAlign = 'center'; G.textBaseline = 'top'; G.fillText('N', c.width - 80, 46);
+}
+</script>
+</body>
+</html>

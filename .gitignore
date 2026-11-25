@@ -1,0 +1,20 @@
+# dependencies
+node_modules/
+
+# local review captures (regenerate with npm run capture)
+**/docs/frames/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# editors and OS
+.DS_Store
+.vscode/
+.idea/
+*.swp
+
+# environment files
+.env
+.env.*

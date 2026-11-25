@@ -1,0 +1,26 @@
+/* Page and overlay styles. The build inlines this file into the single-file page. */
+
+html, body { margin: 0; height: 100%; overflow: hidden; background: #cfc8b2; }
+canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+.hint {
+  position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); pointer-events: none;
+  font: italic 14px/1.3 Georgia, 'Times New Roman', serif; color: #fff6e4; opacity: .85;
+  letter-spacing: .03em; text-shadow: 0 1px 3px #5a3a20;
+}
+.credit {
+  position: fixed; right: 10px; bottom: 8px; pointer-events: none;
+  font: 11px Georgia, serif; color: #fff6e4; opacity: .75; text-shadow: 0 1px 2px #5a3a20;
+}
+.grave-label {
+  position: fixed; left: 50%; top: 18px; transform: translateX(-50%); padding: 8px 16px 9px; pointer-events: none;
+  background: #f3ead6; color: #2e241c; font: 15px/1.35 Georgia, serif; text-align: center; border-radius: 3px;
+  box-shadow: 0 2px 0 #b99f74, 0 6px 14px rgba(60, 30, 10, .25); opacity: 0; transition: opacity .4s;
+}
+.grave-label.visible { opacity: 1; }
+.grave-label span { font-size: 13px; font-style: italic; }
+.street-sign {
+  position: fixed; left: 18px; bottom: 18px; padding: 6px 14px 7px; pointer-events: none;
+  background: #fbfaf6; color: #1b1b1b; font: 600 17px/1.2 'Helvetica Neue', Arial, sans-serif; letter-spacing: .02em;
+  border: 2px solid #1b1b1b; border-radius: 3px; box-shadow: 0 3px 8px rgba(40,25,10,.3); opacity: 0; transition: opacity .3s;
+}
+.street-sign.visible { opacity: 1; }

@@ -1,0 +1,27 @@
+{
+  "name": "norrebro-explorer",
+  "version": "0.2.0",
+  "private": true,
+  "description": "A walk-around game of Nørrebro, Copenhagen, built from OpenStreetMap: explore the real neighbourhood, learn to read a map.",
+  "license": "MIT",
+  "type": "module",
+  "workspaces": [
+    "prototypes/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm test --workspaces --if-present",
+    "lint": "eslint .",
+    "check": "npm run lint && npm test && npm run build",
+    "import-osm": "node tools/import-osm.mjs",
+    "preview-world": "python3 tools/preview.py data/world docs/world-preview.png"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "eslint": "^9.17.0",
+    "globals": "^15.14.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
