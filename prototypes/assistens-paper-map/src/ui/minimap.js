@@ -7,13 +7,11 @@
  *   - a compass rose (N Ø S V, Danish first) turned the way the 3D view is turned, so north on screen is easy to find
  * Click it to switch between the walking view and the map view.
  *
- * It reads only the map and game.state, so it works with every style.
- * The streets, parks and roofs are drawn once into a large off-screen canvas; each update only crops and decorates it.
+ * It reads only game.map and game.state, so it works with every style.
+ * The streets, parks and roofs come from the world's overview (the whole imported area, so no tile has to be loaded),
+ * drawn once into a large off-screen canvas; each update only crops and decorates it.
  */
 import { HOME, SCALE } from '../config.js';
-import { CONTEXT, REGION, STREETS, AREAS, BUILDINGS } from '../core/map/neighbourhood.js';
-import { OUTLINE, PATHS } from '../core/map/cemetery.js';
-import { NAMED_PLACES, FAR } from '../core/map/landmarks.js';
 import { isCaptureMode, createOverlay } from './overlay.js';
 
 const SIZE = 210; // css px
@@ -24,9 +22,10 @@ const PATH = '#efe4c8';
 
 const AREA_FILL = { water: '#9cc3d5', park: '#b9cf95', grass: '#c3d5a2', garden: '#b5cd96', pitch: '#a7c98f', playground: '#e6cf92', cemetery: '#aac58e', square: '#e4ddcb', wood: '#9dbb83', scrub: '#acc290', schoolyard: '#e6dcc4', parking: '#d9d4c8', flowerbed: '#d9b3c0' };
 
-/** The static map: context, then the walkable area on top, in a canvas covering CONTEXT.bounds. */
-function drawBase() {
-  const b = CONTEXT.bounds;
+/** The static map: the overview and the sites, in a canvas covering the whole imported area. */
+function drawBase(map) {
+  const b = map.bounds;
+  const { overview } = map;
   const W = Math.ceil((b.x1 - b.x0) * BASE_PPU);
   const H = Math.ceil((b.z1 - b.z0) * BASE_PPU);
   const cv = document.createElement('canvas');
@@ -40,26 +39,22 @@ function drawBase() {
 
   g.fillStyle = '#efe7d4';
   g.fillRect(0, 0, W, H);
-  for (const areas of [CONTEXT.areas, AREAS]) for (const a of areas) { g.fillStyle = AREA_FILL[a.kind] ?? '#e2dccb'; poly(a.pts); g.fill(); }
+  for (const a of overview.areas) { g.fillStyle = AREA_FILL[a.kind] ?? '#e2dccb'; poly(a.pts); g.fill(); }
   g.fillStyle = AREA_FILL.cemetery;
-  poly(OUTLINE);
-  g.fill();
+  for (const site of map.sites) { poly(site.ground.outline); g.fill(); }
   g.fillStyle = '#d8c3ad';
-  for (const pts of CONTEXT.buildings) { poly(pts); g.fill(); }
-  for (const bd of BUILDINGS) { poly(bd.pts); g.fill(); }
+  for (const pts of overview.buildings) { poly(pts); g.fill(); }
   g.lineCap = 'round';
   g.lineJoin = 'round';
-  for (const streets of [CONTEXT.streets, STREETS]) {
-    for (const s of streets) {
-      const road = s.width >= 5;
-      g.strokeStyle = road ? '#ffffff' : '#f6f0e2';
-      g.lineWidth = Math.max(1.2, s.half * 2 * BASE_PPU * (road ? 1 : 0.7));
-      line(s.pts);
-      g.stroke();
-    }
+  for (const s of overview.streets) {
+    const road = s.width >= 5;
+    g.strokeStyle = road ? '#ffffff' : '#f6f0e2';
+    g.lineWidth = Math.max(1.2, s.half * 2 * BASE_PPU * (road ? 1 : 0.7));
+    line(s.pts);
+    g.stroke();
   }
   g.strokeStyle = PATH;
-  for (const p of PATHS) { g.lineWidth = Math.max(1, p.half * 2 * BASE_PPU); line(p.pts); g.stroke(); }
+  for (const site of map.sites) for (const p of site.ground.paths) { g.lineWidth = Math.max(1, p.half * 2 * BASE_PPU); line(p.pts); g.stroke(); }
   return { cv, X, Z };
 }
 
@@ -77,7 +72,9 @@ export function attachMinimap(game) {
   wrap.addEventListener('pointerdown', (e) => e.stopPropagation());
   wrap.addEventListener('click', (e) => { e.stopPropagation(); game.toggleZoom(); });
 
-  const base = drawBase();
+  const base = drawBase(game.map);
+  const REGION = game.map.region;
+  const { named: NAMED_PLACES, far: FAR } = game.map.landmarks;
   const g = canvas.getContext('2d');
   const k = SIZE / SPAN; // css px per unit
   let since = Infinity;

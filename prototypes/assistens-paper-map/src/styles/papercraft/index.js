@@ -7,8 +7,6 @@
  */
 import { createHarness } from 'papercraft/harness.js';
 import { START, TOY, WALK } from '../../config.js';
-import { REGION, SHEET } from '../../core/map/neighbourhood.js';
-import { blocksWalker } from '../../core/map/walk.js';
 import { PALETTE, LENS } from './settings.js';
 import { printGround } from './world/ground.js';
 import { createPopup, printOnce } from './world/popup.js';
@@ -20,9 +18,17 @@ import { createWalker } from './pieces/walker.js';
 import { cyclist } from './pieces/street.js';
 
 const RIDER_LOOKS = 5;
+/** The printed ground sheet: the play area plus this margin (units) of the overview, so the map view never shows bare paper. */
+const SHEET_MARGIN = 46;
 
-/** @param game from core/game.js: { plan, things, state, place, reset, settings } */
+/** @param game from core/game.js: { things, state, map, place, reset, settings } */
 export function createPapercraftStyle(game) {
+  const REGION = game.map.region;
+  const B = game.map.bounds;
+  const SHEET = {
+    x0: Math.max(B.x0, REGION.x0 - SHEET_MARGIN), z0: Math.max(B.z0, REGION.z0 - SHEET_MARGIN),
+    x1: Math.min(B.x1, REGION.x1 + SHEET_MARGIN), z1: Math.min(B.z1, REGION.z1 + SHEET_MARGIN),
+  };
   const H = createHarness({
     ground: PALETTE.ground,
     mood: 'golden', // ?mood=dusk or ?mood=night to try the others
@@ -37,17 +43,20 @@ export function createPapercraftStyle(game) {
   const popup = createPopup(H);
   const camera = createCamera(H);
   let presenter = null;
+  let makeFor = null;
   let riders = [];
 
   return {
     name: 'papercraft',
     harness: H,
+    pins: REGION, // the ground sheet is printed once, so every tile of the play area must be loaded first
 
     build(nearIds) {
-      H.walk.block(blocksWalker); // the harness's own walk field: only paper-life's critters use it, to roam
-      printGround(H, game.plan);
+      H.walk.block(game.map.blocks); // the harness's own walk field: only paper-life's critters use it, to roam
+      printGround(H, game.map);
       const creatures = [];
-      const makers = createMakers(H, popup, game.things, { onCritter: (h, behaviour) => creatures.push([h, behaviour]) });
+      makeFor = createMakers(H, popup, { onCritter: (h, behaviour) => creatures.push([h, behaviour]) });
+      const makers = makeFor(game.things);
 
       // the walker: a small 3D paper model; the game moves him, the harness swings his limbs by his stride
       const doll = createWalker(H);
@@ -88,6 +97,8 @@ export function createPapercraftStyle(game) {
     },
 
     near(changes) { presenter?.update(changes); },
+    add(things) { if (presenter) presenter.add(makeFor(things)); },
+    remove(ids) { presenter?.remove(ids); },
     zoom(mode, opts) { camera.set(mode, opts); },
     stats: () => presenter?.stats(),
   };

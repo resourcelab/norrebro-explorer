@@ -95,7 +95,7 @@ export function foldableFootprint(pts) {
 
 /**
  * One apartment block standing on its footprint.
- * @param b a building from map/neighbourhood.js BUILDINGS ({ id, pts, levels })
+ * @param b a building (core/world/features.js): { id, pts, levels }
  * @returns the hinge, or null when the footprint is degenerate
  */
 export function apartmentBlock(H, popup, b) {

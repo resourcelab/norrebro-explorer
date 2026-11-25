@@ -1,5 +1,5 @@
 /**
- * Paper pieces for the game's things (core/world.js). createMakers returns, for every thing, a maker: a function that
+ * Paper pieces for the game's things (core/world.js). createMakers gives, for every thing, a maker: a function that
  * builds its paper piece(s) when the presenter first needs them. Prints shared by many pieces (tree variants, grave
  * plots, benches, lamps, playground kit) are made once, up front.
  */
@@ -26,11 +26,11 @@ const GATE_POST_SCALE = TOY.wallHeight / 1.5; // the posts stand a little above 
 const CONSTRUCTIONS = new Set(['chapel', 'shed', 'wall', 'gate-post', 'block', 'church']);
 
 /**
- * @param things from core/world.js
  * @param onCritter (hinge, behaviour) for each crow or squirrel built (paper-life animates them)
- * @returns Map id -> { x, z, node, eager, make }
+ * @returns makersFor(things) -> Map id -> { x, z, node, eager, make }: call it for the things at the start, and again
+ *          for the things of every tile that loads later
  */
-export function createMakers(H, popup, things, { onCritter }) {
+export function createMakers(H, popup, { onCritter }) {
   const treeVariant = createTreePrints(H);
   const props = createPropPrints(H);
   const plotPrints = createPlotPrints(H);
@@ -72,11 +72,13 @@ export function createMakers(H, popup, things, { onCritter }) {
     fingerpost: (t) => popup(...fingerpost(t.arms.map((a) => ({ label: `${a.name} ${a.metres} m`, dx: a.dx }))), { x: t.x, z: t.z, yaw: 0, solid: 0.2 }),
   };
 
-  const makers = new Map();
-  for (const t of things) {
-    const make = piece[t.kind];
-    if (!make) { console.warn(`papercraft: no piece for kind "${t.kind}"`); continue; }
-    makers.set(t.id, { x: t.x, z: t.z, node: CONSTRUCTIONS.has(t.kind), eager: t.kind === 'critter', make: () => make(t) });
-  }
-  return makers;
+  return (things) => {
+    const makers = new Map();
+    for (const t of things) {
+      const make = piece[t.kind];
+      if (!make) { console.warn(`papercraft: no piece for kind "${t.kind}"`); continue; }
+      makers.set(t.id, { x: t.x, z: t.z, node: CONSTRUCTIONS.has(t.kind), eager: t.kind === 'critter', make: () => make(t) });
+    }
+    return makers;
+  };
 }

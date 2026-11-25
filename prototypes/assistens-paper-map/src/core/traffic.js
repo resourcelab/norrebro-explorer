@@ -16,7 +16,7 @@ export function createTraffic(routes, rnd) {
     if (total < 1) return;
     riders.push({
       id: `cyclist-${riders.length + 1}`, route: route.pts, lengths, total, look: k,
-      s: rnd() * Math.min(10, total), dir: k % 4 ? 1 : -1, speed: 3.2 + rnd() * 1.6, x: route.pts[0][0], z: route.pts[0][1], dx: 1, dz: 0,
+      s: rnd() * total, dir: k % 4 ? 1 : -1, speed: 3.2 + rnd() * 1.6, x: route.pts[0][0], z: route.pts[0][1], dx: 1, dz: 0,
     });
   });
 

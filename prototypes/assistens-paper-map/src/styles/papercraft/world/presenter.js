@@ -5,6 +5,7 @@
  *     looks wrong); the printed ground shows what lies flat (roofs, streets, parks)
  *   - a thing's paper pieces are only built the first time it comes near, nearest first, a few per frame within a
  *     small time budget, so the load stays quick and walking into a new street never stutters
+ *   - things arrive and leave with their tiles (add, remove); a removed thing's pieces leave the scene
  */
 import { BUILD } from '../settings.js';
 
@@ -17,7 +18,8 @@ const FOLDING = 2;
  */
 export function createPresenter(H, makers, { buildPerStep = BUILD.buildPerStep, budgetMs = BUILD.budgetMs } = {}) {
   const items = new Map(); // id -> { ...maker, hinges, state, wanted }
-  for (const [id, m] of makers) items.set(id, { ...m, id, hinges: null, state: DOWN, wanted: false });
+  const take = (list) => { for (const [id, m] of list) if (!items.has(id)) items.set(id, { ...m, id, hinges: null, state: DOWN, wanted: false }); };
+  take(makers);
   const queue = [];
   let started = false;
 
@@ -108,6 +110,24 @@ export function createPresenter(H, makers, { buildPerStep = BUILD.buildPerStep, 
         it.wanted = false;
         if (it.hinges && it.state === UP && started) lower(it);
       }
+    },
+    /** Things that arrived with a tile that loaded: their makers. They are built when the game says they are near. */
+    add(more) { take(more); },
+    /** Things whose tile was dropped: take their pieces out of the scene for good. */
+    remove(ids) {
+      const dead = new Set();
+      for (const id of ids) {
+        const it = items.get(id);
+        if (!it) continue;
+        items.delete(id);
+        it.wanted = false;
+        for (const h of it.hinges ?? []) { h.group.removeFromParent(); dead.add(h); }
+      }
+      if (!dead.size) return;
+      const kept = H.hinges.filter((h) => !dead.has(h)); // the harness animates every hinge in this list
+      H.hinges.length = 0;
+      H.hinges.push(...kept);
+      for (let i = queue.length - 1; i >= 0; i--) if (!items.has(queue[i].id)) queue.splice(i, 1);
     },
     /** How many pieces exist, are built, and stand (for checks). */
     stats() {

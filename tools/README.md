@@ -34,5 +34,6 @@ Needs Pillow (`pip install -r requirements-dev.txt`). Useful to check an import 
 
 ## Prototype tools
 
-The papercraft prototype has its own tools in `prototypes/assistens-paper-map/tools/`:
-`extract-surroundings.py` (cuts its neighbourhood out of `data/world/`) and `capture.py` (headless screenshots).
+The papercraft prototype has its own, in `prototypes/assistens-paper-map/`: `scripts/pack-world.mjs` (packs
+`data/world/` into the tiles the game loads: simplified, with a margin, plus an overview) and `tools/capture.py`
+(headless screenshots).

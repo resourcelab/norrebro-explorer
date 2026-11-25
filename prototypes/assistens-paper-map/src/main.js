@@ -2,15 +2,18 @@
  * Nørrebro Explorer, Assistens Kirkegård slice. Entry point.
  *
  *   config.js     game settings shared by every style: scale, toy scale, walking, zooms, near/far, start, home
- *   data/         OpenStreetMap extracts and texts (no logic)
- *   core/         the game, with no graphics: the map, the plan, the things, walking, collision, near/far, places
+ *   data/         hand-kept data and texts: landmarks, the Assistens plan, grave texts (no logic)
+ *   core/         the game, with no graphics: the world frame, tiles, the plan, the things, walking, collision,
+ *                 near/far, places
+ *   ../world/     the packed world tiles the game loads as you walk (npm run pack-world)
  *   styles/       how the game looks: one folder per style, each implementing styles/README.md (?style=<name>)
  *   ui/           overlays that work with every style: place label, street sign, minimap and compass, zoom button
  *
- * Flow: the game plans the world → the chosen style builds it and runs the frame loop, calling game.step each frame
- * → the overlays read game.state.
+ * Flow: the game opens the world → the chosen style is attached (the first tiles load, the style builds and runs the
+ * frame loop, calling game.step each frame; more tiles load as you walk) → the overlays read game.state and game.map.
  */
 import { createGame } from './core/game.js';
+import { fetchLoader, inlineLoader } from './core/world/loaders.js';
 import { STYLES, chooseStyle } from './styles/index.js';
 import { attachPlaceLabels } from './ui/place-labels.js';
 import { attachStreetSign } from './ui/street-sign.js';
@@ -18,8 +21,11 @@ import { attachMinimap } from './ui/minimap.js';
 import { attachZoomButton } from './ui/zoom-button.js';
 import { isCaptureMode } from './ui/overlay.js';
 
-const game = createGame();
-const style = game.attach(STYLES[chooseStyle()].create(game));
+// the world: baked into the page (the offline file), or fetched tile by tile from beside it (the hosted game, dev)
+const worldUrl = new URL(document.querySelector('meta[name=world]')?.content ?? './world/', location.href);
+const loader = window.__WORLD__ ? inlineLoader(window.__WORLD__) : fetchLoader(worldUrl);
+const game = await createGame({ loader });
+const style = await game.attach(STYLES[chooseStyle()].create(game));
 
 attachPlaceLabels(game);
 attachStreetSign(game);

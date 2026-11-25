@@ -61,6 +61,14 @@ stand in for hand-written landmarks.
     mode so the core moves the walker) and `flat` (a 2D top-down map), switched with `?style=`.
   - `src/ui/` holds the overlays (minimap, compass, labels, street sign, zoom button), which read the game state and
     work over any style.
-- **Next:** landmarks data, then the core reads the world tiles directly (chunk by chunk) instead of the prototype's
-  own extract (`src/data/surroundings.js`), so the walkable area can grow. When a second app needs the core, it moves
-  from the prototype to the repo root (`core/`, `styles/`) unchanged.
+  - **One coordinate frame:** metres from the imported area's north-west corner (x east, z south), the frame of
+    `data/world/`. `src/core/geo.js` is the only code that knows longitude and latitude; a test checks no other file
+    projects.
+  - **The core reads the world tiles.** `scripts/pack-world.mjs` packs `data/world/` into what the game loads (100 m
+    tiles with a 30 m margin, simplified, plus an overview of the whole area). `core/world/store.js` loads the tiles
+    within 400 m of the walker and drops those beyond ~520 m; each tile is planned on its own with its own seed (the
+    same answer whatever else is loaded); a spatial index answers "what is here?" for collision and planning.
+    Assistens Kirkegård is a **site**: a hand-kept, more detailed plan laid over the tiles it covers.
+- **Next:** print the papercraft ground tile by tile (it is still one sheet for the play area, so papercraft pins those
+  tiles), then grow the play area chunk by chunk (`PLAY_AREA` in `config.js`). Landmark texts. When a second app needs
+  the core, it moves from the prototype to the repo root (`core/`, `styles/`) unchanged.

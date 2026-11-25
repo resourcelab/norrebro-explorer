@@ -1,5 +1,6 @@
 # Publish the game to GitHub Pages on every push to main: https://resourcelab.github.io/norrebro-explorer/
-# The site is the prototype's single-file page, rebuilt from source. One-time setup in the repo on GitHub:
+# The site is the prototype's dist/ (index.html and the world tiles it loads as you walk), rebuilt from source.
+# One-time setup in the repo on GitHub:
 # Settings → Pages → Build and deployment → Source: "GitHub Actions".
 name: Publish the game
 
@@ -31,7 +32,7 @@ jobs:
       - name: Assemble the site
         run: |
           mkdir -p _site
-          cp prototypes/assistens-paper-map/dist/assistens-kirkegaard-paper-walk.html _site/index.html
+          cp -r prototypes/assistens-paper-map/dist/. _site/
           touch _site/.nojekyll
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

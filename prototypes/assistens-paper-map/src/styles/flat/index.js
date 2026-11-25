@@ -4,11 +4,10 @@
  * papercraft (../README.md), reads the same things and game state, and shares no drawing code with it.
  *
  * Near and far: everything on the map is always drawn; small things (trees, graves, benches, signs...) only when near,
- * so the map view stays readable.
+ * so the map view stays readable. Tiles: where a tile is loaded its outlines are drawn; everywhere else the world's
+ * overview is. It pins no tiles, so it streams as you walk.
  */
 import { ZOOMS, TOY } from '../../config.js';
-import { STREETS, AREAS, BUILDINGS, CONTEXT, REGION } from '../../core/map/neighbourhood.js';
-import { OUTLINE, PATHS } from '../../core/map/cemetery.js';
 
 const COLOURS = {
   paper: '#f2ede1', veil: 'rgba(242,237,225,0.5)', lawn: '#cfd8ad', park: '#bfd39b', grass: '#c9d9a8', garden: '#bcd29c',
@@ -42,17 +41,31 @@ export function createFlatStyle(game) {
 
   const near = new Set();
   const view = { x: game.state.hero.x, z: game.state.hero.z, across: ZOOMS.walk.across, from: ZOOMS.walk.across, to: ZOOMS.walk.across, t: 1 };
-  const things = game.things;
-  const labels = streetLabels([...STREETS, ...CONTEXT.streets]);
+  const map = game.map;
+  const REGION = map.region;
+  const site = map.sites[0].ground; // Assistens: its lawn and paths
   const boxOf = (pts) => { let x0 = Infinity; let z0 = Infinity; let x1 = -Infinity; let z1 = -Infinity; for (const [x, z] of pts) { x0 = Math.min(x0, x); z0 = Math.min(z0, z); x1 = Math.max(x1, x); z1 = Math.max(z1, z); } return [x0, z0, x1, z1]; };
   const withBox = (list, ptsOf) => list.map((f) => ({ f, box: boxOf(ptsOf(f)) }));
-  const layers = {
-    areas: withBox([...CONTEXT.areas, ...AREAS], (a) => a.pts),
-    streets: withBox([...CONTEXT.streets, ...STREETS].sort((a, b) => a.width - b.width), (s) => s.pts),
-    farBlocks: withBox(CONTEXT.buildings, (p) => p),
-    blocks: withBox(BUILDINGS, (b) => b.pts),
-    paths: withBox(PATHS, (p) => p.pts),
+  const far = {
+    areas: withBox(map.overview.areas, (a) => a.pts),
+    streets: withBox([...map.overview.streets].sort((a, b) => a.width - b.width), (s) => s.pts),
+    blocks: withBox(map.overview.buildings, (p) => p),
   };
+  const paths = withBox(site.paths, (p) => p.pts);
+  let layers = null;
+  let labels = [];
+  let loadedRects = [];
+  /** The loaded tiles' outlines, gathered again whenever tiles load or unload. */
+  function gather() {
+    layers = {
+      areas: withBox(map.features('areas'), (a) => a.pts),
+      streets: withBox(map.features('streets').sort((a, b) => a.width - b.width), (s) => s.pts),
+      blocks: withBox(map.features('buildings'), (b) => b.pts),
+    };
+    loadedRects = map.tiles().map((t) => t.rect);
+    labels = streetLabels([...map.features('streets'), ...map.overview.streets]);
+  }
+  map.onTiles(() => { layers = null; });
 
   // ---- drawing helpers (world units -> screen pixels) ----
   let ppu = 1;
@@ -62,18 +75,10 @@ export function createFlatStyle(game) {
   const trace = (pts, close = true) => { g.beginPath(); pts.forEach(([x, z], i) => (i ? g.lineTo(sx(x), sz(z)) : g.moveTo(sx(x), sz(z)))); if (close) g.closePath(); };
   const dot = (x, z, r, fill) => { g.fillStyle = fill; g.beginPath(); g.arc(sx(x), sz(z), Math.max(1, r * ppu), 0, 2 * Math.PI); g.fill(); };
 
-  function draw() {
-    g.setTransform(dpr, 0, 0, dpr, 0, 0);
-    g.fillStyle = COLOURS.paper;
-    g.fillRect(0, 0, W, Hh);
-    g.lineJoin = 'round';
-    g.lineCap = 'round';
-
-    for (const { f, box } of layers.areas) if (visible(box)) { g.fillStyle = COLOURS[f.kind] ?? COLOURS.square; trace(f.pts); g.fill(); }
-    g.fillStyle = COLOURS.lawn;
-    trace(OUTLINE);
-    g.fill();
-    for (const { f, box } of layers.streets) {
+  /** Roads, footways and areas of one layer set. */
+  function drawGround(L) {
+    for (const { f, box } of L.areas) if (visible(box)) { g.fillStyle = COLOURS[f.kind] ?? COLOURS.square; trace(f.pts); g.fill(); }
+    for (const { f, box } of L.streets) {
       if (!visible(box)) continue;
       const road = f.width >= 5;
       g.strokeStyle = road ? COLOURS.casing : COLOURS.path;
@@ -81,22 +86,45 @@ export function createFlatStyle(game) {
       trace(f.pts, false);
       g.stroke();
     }
-    for (const { f, box } of layers.streets) {
+    for (const { f, box } of L.streets) {
       if (!visible(box) || f.width < 5) continue;
       g.strokeStyle = f.kind === 'pedestrian' ? COLOURS.footway : COLOURS.road;
       g.lineWidth = Math.max(1, f.half * 2 * ppu);
       trace(f.pts, false);
       g.stroke();
     }
-    for (const { f, box } of layers.paths) {
+  }
+
+  function draw() {
+    if (!layers) gather();
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.fillStyle = COLOURS.paper;
+    g.fillRect(0, 0, W, Hh);
+    g.lineJoin = 'round';
+    g.lineCap = 'round';
+
+    // the overview where no tile is loaded
+    g.save();
+    g.beginPath();
+    g.rect(0, 0, W, Hh);
+    for (const r of loadedRects) g.rect(sx(r.x0), sz(r.z0), (r.x1 - r.x0) * ppu, (r.z1 - r.z0) * ppu); // tiles never overlap
+    g.clip('evenodd');
+    drawGround(far);
+    g.fillStyle = COLOURS.far;
+    for (const { f, box } of far.blocks) if (visible(box)) { trace(f); g.fill(); }
+    g.restore();
+
+    drawGround(layers);
+    g.fillStyle = COLOURS.lawn;
+    trace(site.outline);
+    g.fill();
+    for (const { f, box } of paths) {
       if (!visible(box)) continue;
       g.strokeStyle = COLOURS.path;
       g.lineWidth = Math.max(1, f.half * 2 * ppu);
       trace(f.pts, false);
       g.stroke();
     }
-    g.fillStyle = COLOURS.far;
-    for (const { f, box } of layers.farBlocks) if (visible(box)) { trace(f); g.fill(); }
     for (const { f, box } of layers.blocks) {
       if (!visible(box) || f.landmark) continue;
       g.fillStyle = 'rgba(80,50,30,0.18)'; // a soft shadow, down and right
@@ -119,7 +147,7 @@ export function createFlatStyle(game) {
     g.rect(sx(REGION.x0), sz(REGION.z0), (REGION.x1 - REGION.x0) * ppu, (REGION.z1 - REGION.z0) * ppu);
     g.fill('evenodd');
 
-    for (const t of things) if (near.has(t.id) || t.always) drawThing(t);
+    for (const t of game.things) if (near.has(t.id) || t.always) drawThing(t);
     drawStreetNames();
     for (const r of game.state.riders) drawRider(r);
     drawHero();
@@ -285,6 +313,8 @@ export function createFlatStyle(game) {
       // for captures: step the game by hand and draw (no real-time loop needed)
       window.__flat = { step(sec, fps = 60) { for (let i = 0; i < Math.round(sec * fps); i++) step(1 / fps); const h = game.state.hero; view.x = h.x; view.z = h.z; view.across = view.to; view.t = 1; ppu = W / view.across; draw(); } };
     },
+    add() {}, // things are read from game.things as they are drawn
+    remove(ids) { for (const id of ids) near.delete(id); },
     near({ came, went }) {
       for (const id of came) near.add(id);
       for (const id of went) near.delete(id);

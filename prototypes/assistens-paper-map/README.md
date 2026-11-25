@@ -7,7 +7,8 @@ round the walls: Nørrebrogade, Jagtvej, Kapelvej, Hans Tavsens Park and the pla
 street you are on.
 
 - **Play it online:** [resourcelab.github.io/norrebro-explorer/](https://resourcelab.github.io/norrebro-explorer/), published from `main`.
-- **Open it:** double-click `dist/assistens-kirkegaard-paper-walk.html` (one self-contained file, works offline).
+- **Open it:** double-click `dist/assistens-kirkegaard-paper-walk.html` (one self-contained file with the whole area
+  baked in, works offline).
 - **Controls:** arrows / WASD walk · Shift run · Z (or the button) switches between the walking view and the map
   view · click the minimap to switch too · drag to look around · click the scene to fold the world flat and back up.
 - **URL options:** `?style=flat` for the flat map style · `?mood=dusk` or `?mood=night` (papercraft) · `?zoom=map` opens
@@ -37,8 +38,11 @@ look (colours, camera, lens) lives in its `settings.js`.
   and the ground shows them printed (roofs, streets, parks). Blocks are built the first time you come near, a few per
   frame, so the load stays quick and walking never stutters. Beyond the walkable area, a veiled ring of context
   (streets, roofs, the lakes) is printed so the map view never ends in bare paper.
+- **Tiles load as you walk:** the map comes in 100 m tiles. Those within 400 m of the walker are loaded and planned,
+  and those more than ~520 m away are dropped, with everything on them. The flat style streams this way now; papercraft
+  still loads the whole play area up front, because its ground is printed as one sheet.
 
-Status: v0.4 (game core and swappable styles), 2026-11-25. The first slice of [Nørrebro Explorer](../../README.md).
+Status: v0.5 (one coordinate frame, world tiles that stream), 2026-11-25. The first slice of [Nørrebro Explorer](../../README.md).
 
 ![Nørrebrogade side](docs/2026-11-24-norrebrogade-side.png)
 ![Hans Tavsens Park](docs/2026-11-24-hans-tavsens-park.png)
@@ -48,15 +52,15 @@ Status: v0.4 (game core and swappable styles), 2026-11-25. The first slice of [N
 From the repo root run `npm install` once. Then, in this folder:
 
 ```sh
-npm run dev        # serve this folder, then open http://localhost:5173/src/
-npm test           # map and walking-rule tests (Node, no browser needed)
-npm run build      # rebuild dist/assistens-kirkegaard-paper-walk.html
+npm run dev        # pack the world, serve this folder, then open http://localhost:5173/src/
+npm test           # pack the world, then the core, map and wayfinding tests (Node, no browser needed)
+npm run build      # pack the world, then dist/index.html + dist/world/ (hosted) and the offline single file
+npm run pack-world # ../../data/world (full detail) -> world/ (what the game loads); dev, test and build run it first
 npm run capture    # headless overview frames into docs/frames/ (needs Python + Playwright)
-npm run extract-surroundings   # regenerate src/data/surroundings.js from ../../data/world
 ```
 
-The dev page loads three.js from a CDN and needs a local server (ES modules don't load from `file://`). The built file
-has everything inlined and needs neither.
+The dev page loads three.js from a CDN and needs a local server (ES modules and tiles don't load from `file://`).
+`dist/index.html` needs a server too (it fetches its tiles); the offline file needs neither.
 
 ## How it works
 
@@ -80,24 +84,46 @@ style. Switch styles with `?style=flat` (the default is papercraft); how to writ
                     └────────────────────┘                  └──────────────────┘
 ```
 
-`src/main.js` creates the game, hands it to the chosen style (which builds the world and starts the loop, calling
-`game.step(dt)` every frame), then attaches the overlays.
+`src/main.js` opens the world, hands the game to the chosen style (the first tiles load, then the style builds and
+starts the loop, calling `game.step(dt)` every frame), then attaches the overlays.
+
+### One frame, tiles, sites
+
+- **One coordinate frame.** Everything is measured from the north-west corner of the imported area (12.541 E,
+  55.6965 N), x east, z south: the world tiles, the Assistens plan, the start, the play area. Map data is in metres; the
+  game works in units (metres × 0.2). `src/core/geo.js` is the only code that knows about longitude and latitude;
+  hand-written places (flags, far places) are given as longitude and latitude and turned into the frame there.
+- **Tiles.** `scripts/pack-world.mjs` packs the repo's world tiles (`../../data/world`, full detail) into what the game
+  loads (`world/`): de-duplicated, simplified, cut into 100 m tiles with a 30 m margin, plus an overview of the whole
+  area for minimaps and the far landscape. `core/world/store.js` loads tiles round the walker and drops far ones;
+  `core/world/index.js` indexes what is loaded, so "is there a building here?" looks at a few features, not all.
+- **Each tile plans itself.** The neighbourhood's rules (`core/plan/neighbourhood.js`: blocks, street trees,
+  playgrounds, racks, benches, corner signs) read only the tile they plan, with the tile's own random stream, so a
+  tile always comes out the same, whatever is loaded round it. A thing belongs to the tile it stands on.
+- **Sites.** A place with a hand-kept plan in more detail than the tiles, laid over them: today only Assistens
+  Kirkegård (`core/sites/assistens/`: walls with gates, path kinds, notable graves, the chapel). Most of Nørrebro needs
+  no site; the tiles are enough.
+- **Always there.** Churches, flags and fingerposts are made from the overview, so they stand whatever is loaded.
 
 ```
 src/
 ├── index.html, styles.css   dev page and overlay styles (the build inlines both)
 ├── main.js                  entry point
-├── config.js                game settings for every style: scale, toy scale, walking, zooms, near/far, start, home
-├── data/                    no logic
-│   ├── assistens-osm.js     the cemetery from OpenStreetMap: outline, paths, walls, gates, trees, benches, graves
-│   ├── surroundings.js      streets, blocks, parks, playgrounds, trees round the walls + a flat context ring (generated)
-│   ├── landmarks.js         churches, flags and far places to steer by
+├── config.js                game settings for every style: scale, toy scale, walking, zooms, near/far, play area,
+│                            start, home, tile loading
+├── data/                    hand-kept data, no logic
+│   ├── sites/assistens.js   the cemetery from OpenStreetMap: outline, paths, walls, gates, trees, benches, graves
+│   ├── landmarks.js         churches, flags and far places to steer by (longitude, latitude); point playgrounds
 │   └── notable-graves.js    who rests where (label text)
 ├── core/                    the game: no graphics, no style
-│   ├── map/                 the map in world units: math, units, cemetery, neighbourhood, landmarks, walk rules
-│   ├── plan/                where every piece stands (seeded): cemetery, neighbourhood, signs, fingerposts
-│   ├── world.js             the world as things (the contract with the styles)
-│   ├── game.js              the game loop step and state; attach(style)
+│   ├── geo.js               the world frame: longitude/latitude ↔ metres ↔ units (the only place that projects)
+│   ├── world/               tiles: store (load, unload), features (packed data → units), spatial index, loaders
+│   ├── map/                 math, landmarks, the walk rules
+│   ├── plan/                where things stand (seeded): per-tile neighbourhood rules; fingerposts and cycle routes
+│   ├── sites/               places with their own plan, laid over the tiles: assistens/ (map, plan, things)
+│   ├── world.js             the world as things (the contract with the styles): per tile, per site, always there
+│   ├── solid.js             how close the walker may come to each kind of thing
+│   ├── game.js              the game: world, streaming, step and state, attach(style), game.map for drawing
 │   ├── input.js             keyboard → intent (and a scripted input for tests)
 │   ├── movement.js          walking: acceleration, turning, sliding along walls
 │   ├── colliders.js         collision: the map's rules plus round solid things
@@ -116,13 +142,17 @@ src/
 │   │   └── pieces/          how each kind looks: trees, graves, walls, chapel, blocks, churches, signs, playground…
 │   └── flat/index.js        the flat top-down map (2D canvas)
 └── ui/                      overlays for every style: minimap + compass + home, place label, street sign, zoom button
+world/                       the packed world (generated by npm run pack-world, not committed)
 tests/
-├── core.test.mjs            the core runs headless: things, collision, walking, near/far, a whole game run
-├── map.test.mjs             geometry, gates, buildings, reachability
-└── wayfinding.test.mjs      landmarks, corner signs, fingerposts, wider streets, the context ring
-tools/                       extract-surroundings.py, capture.py
+├── helpers.mjs              the world from disk, a headless game with a null style
+├── core.test.mjs            the core runs headless: things, collision, walking, near/far, tiles streaming, game runs
+├── map.test.mjs             geometry, the world frame, the Assistens plan against the tiles, the index, reachability
+└── wayfinding.test.mjs      landmarks, corner signs, fingerposts, cyclists, wider streets, the overview
+tools/capture.py             headless review screenshots
 vendor/papercraft/           the papercraft kit (MIT, see its README for the local changes, including drive mode)
-scripts/build.mjs            esbuild bundle → dist/
+scripts/
+├── pack-world.mjs           ../../data/world → world/ (packed tiles + overview)
+└── build.mjs                esbuild bundle → dist/ (hosted page + tiles, and the offline single file)
 ```
 
 ## Notes on accuracy

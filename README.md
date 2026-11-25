@@ -21,8 +21,8 @@ Play it in your browser at **[resourcelab.github.io/norrebro-explorer/](https://
 `.github/workflows/pages.yml`).
 
 Or download or clone the repo and double-click
-`prototypes/assistens-paper-map/dist/assistens-kirkegaard-paper-walk.html`. It is one self-contained file that runs
-offline in any modern browser. Arrow keys or WASD to walk, drag to look around.
+`prototypes/assistens-paper-map/dist/assistens-kirkegaard-paper-walk.html`. It is one self-contained file (the whole
+area baked in) that runs offline in any modern browser. Arrow keys or WASD to walk, drag to look around.
 
 ## Who it is for
 
@@ -39,7 +39,7 @@ Needs Node.js 20 or newer. Python 3 is only needed for the optional preview and 
 ```sh
 npm install          # installs every workspace (three.js, esbuild, ESLint)
 npm run check        # lint + tests + build, the same as CI
-npm run build        # rebuild the prototype's single-file page
+npm run build        # rebuild the prototype: the hosted page + tiles, and the offline single file
 npm run dev -w prototypes/assistens-paper-map   # serve it, then open http://localhost:5173/src/
 ```
 

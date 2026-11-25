@@ -32,6 +32,10 @@ Coordinates are metres from the origin, **x east and z south**. Each tile has it
 
 A feature that crosses a tile edge is listed in every tile it touches, with the same `id`; de-duplicate by `id`.
 
+The game doesn't load these directly: `prototypes/assistens-paper-map/scripts/pack-world.mjs` packs them (simplified,
+re-tiled with a margin, plus an overview of the whole area) into what the browser fetches. The game's coordinates are
+this same frame (see the prototype's `src/core/geo.js`).
+
 ## landmarks/ (planned)
 
 Hand-written, fact-checked landmark texts in Danish and English. Format in `docs/architecture.md`.

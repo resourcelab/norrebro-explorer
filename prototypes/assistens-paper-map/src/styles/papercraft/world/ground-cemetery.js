@@ -6,14 +6,15 @@
 import * as P2 from 'papercraft/lib/paperkit-2d.js';
 import { PALETTE as C } from '../settings.js';
 import { besideSegment } from '../../../core/map/math.js';
-import { OUTLINE, PATHS, CHAPEL, CHAPEL_CENTRE } from '../../../core/map/cemetery.js';
 
 const LEAF_COLOURS = ['#dcae3c', '#c9772f', '#b5612f', '#e2bd5a', '#a8562c'];
 const LEAVES_PER_TREE = 70;
 const LAWN_DRIFT_MARKS = 26000;
 const FORECOURT = '#ddd2b8';
 
-export function printCemeteryGround(k, plan) {
+/** @param site a site from game.map.sites (its ground: outline, paths, chapel); @param plan its plan (plots, trees) */
+export function printCemeteryGround(k, site, plan) {
+  const { outline: OUTLINE, paths: PATHS, chapel: CHAPEL, chapelCentre: CHAPEL_CENTRE } = site.ground;
   const leaf = leafStamp(k);
   const { g, X, Z, torn, washes } = k;
 
@@ -29,7 +30,7 @@ export function printCemeteryGround(k, plan) {
   printLeaves(k, plan.trees, leaf);
   g.restore();
 
-  printPaths(k, leaf);
+  printPaths(k, PATHS, leaf);
 
   // the chapel forecourt: a cobbled apron a third larger than the chapel
   const [cx, cz] = CHAPEL_CENTRE;
@@ -93,7 +94,7 @@ function printLeaves({ g, ppu, X, Z, rnd, drifts }, trees, leaf) {
 }
 
 /** Paths: a darker verge, the torn gravel or asphalt strip, a worn pale centre, then grit and a few leaves. */
-function printPaths(k, leaf) {
+function printPaths(k, PATHS, leaf) {
   const { g, ppu, X, Z, rnd, torn, bandOf, line } = k;
   for (const p of PATHS) torn(bandOf(p.pts, p.half + 0.12), P2.rgba(P2.shade(C.lawn, -0.12), 0.5), 'rgba(0,0,0,0)');
   for (const p of PATHS) torn(bandOf(p.pts, p.half), p.asphalt ? C.asphalt : C.path);

@@ -1,20 +1,20 @@
 /**
- * Placement inside the walls: notable graves, trees, grave plots, benches and lamp posts.
- * Positions only; world/build-cemetery.js turns them into paper pieces.
+ * Placement inside the walls: notable graves, trees, grave plots, benches and lamp posts. Positions only; things.js
+ * turns them into things.
  */
-import { rng, tileNoise } from '../random.js';
-import { OSM } from '../../data/assistens-osm.js';
-import { toUnits } from '../map/units.js';
-import { inPolygon, polylineDistance, besideSegment } from '../map/math.js';
-import { OUTLINE, BOUNDS, insideCemetery, AVENUES, pathDistance, wallDistance } from '../map/cemetery.js';
+import { rng, tileNoise } from '../../random.js';
+import { ASSISTENS as OSM } from '../../../data/sites/assistens.js';
+import { toUnits } from '../../geo.js';
+import { inPolygon, polylineDistance, besideSegment, centroid } from '../../map/math.js';
+import { OUTLINE, BOUNDS, insideCemetery, AVENUES, pathDistance, wallDistance } from './map.js';
 
 /** Broadleaf mix for trees that are not on Poppelalléen (linden is the cemetery's commonest). */
 const TREE_MIX = ['linden', 'linden', 'linden', 'chestnut', 'maple', 'beech', 'yew'];
 
 /** Notable graves at their mapped positions: [{ x, z, name }]. */
 export function planNotableGraves(keep) {
-  const notable = OSM.tombs.map(([x, y, name]) => {
-    const [ux, uz] = toUnits([x, y]);
+  const notable = OSM.tombs.map(([x, z, name]) => {
+    const [ux, uz] = toUnits([x, z]);
     return { x: ux, z: uz, name };
   });
   for (const n of notable) keep.add(n.x, n.z, 1.3);
@@ -29,7 +29,8 @@ export function planTrees(keep, rnd) {
   const poplarAvenue = AVENUES[1].pts;
   const trees = [];
   const tooClose = (x, z, r) => trees.some((t) => Math.hypot(t.x - x, t.z - z) < r);
-  const grown = OUTLINE.map(([px, pz]) => [px * 1.04, pz * 1.04]); // the outline, a little larger: trees on the wall line
+  const [cx, cz] = centroid(OUTLINE); // the outline, a little larger (4 % from its centre): trees on the wall line
+  const grown = OUTLINE.map(([px, pz]) => [cx + (px - cx) * 1.04, cz + (pz - cz) * 1.04]);
 
   for (const mapped of OSM.trees) {
     let [x, z] = toUnits(mapped);

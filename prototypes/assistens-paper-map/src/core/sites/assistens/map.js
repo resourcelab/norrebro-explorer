@@ -1,10 +1,10 @@
 /**
- * The cemetery's plan in world units: outline, paths, walls with their openings, gates, the chapel and the sheds.
- * Source: src/data/assistens-osm.js (OpenStreetMap). Everything here is computed once at load and then read-only.
+ * Assistens Kirkegård's plan in world units: outline, paths, walls with their openings, gates, hedges, the chapel and
+ * the sheds. Source: src/data/sites/assistens.js (OpenStreetMap, in the world frame). Computed once, then read-only.
  */
-import { OSM } from '../../data/assistens-osm.js';
-import { toUnits } from './units.js';
-import { inPolygon, polylineDistance, segmentIntersection, boundsOf, centroid, longestEdge } from './math.js';
+import { ASSISTENS as OSM } from '../../../data/sites/assistens.js';
+import { toUnits } from '../../geo.js';
+import { inPolygon, polylineDistance, segmentIntersection, boundsOf, centroid, longestEdge } from '../../map/math.js';
 
 // ---- outline ----------------------------------------------------------------------------------------------------------
 export const OUTLINE = OSM.outline.map(toUnits);
@@ -90,7 +90,7 @@ const HEDGE_HALF_THICKNESS = 0.35;
 export const hedgeBlocks = (x, z) => HEDGES.some((h) => polylineDistance(x, z, h) < HEDGE_HALF_THICKNESS);
 
 // ---- sheds and service buildings --------------------------------------------------------------------------------------
-// Mapped footprints, stored flat as [x0, y0, x1, y1, ...]. Booths under 5 m (1 unit) are left out: one of them stands
+// Mapped footprints, stored flat as [x0, z0, x1, z1, ...]. Booths under 5 m (1 unit) are left out: one of them stands
 // in the Nørrebros Runddel gateway and would block the entrance.
 export const SHEDS = OSM.smallBuildings
   .map((flat) => {

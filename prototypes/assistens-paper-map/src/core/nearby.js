@@ -2,9 +2,10 @@
  * Near and far: which things are within NEARBY.radius of the walker. The core only decides; the style decides what
  * near and far look like (papercraft folds pieces up and flat; another style might fade them, or ignore it).
  * A near thing stays near until it is radius + hysteresis away, so pieces at the edge don't flicker. Things marked
- * `always` (landmarks) are always near.
+ * `always` (landmarks) are always near. Things are added and removed as their tiles load and unload.
  */
-export function createNearby(things, { radius, hysteresis, checkEvery }) {
+export function createNearby({ radius, hysteresis, checkEvery }) {
+  const things = new Map(); // id -> thing
   const near = new Set();
   let since = Infinity;
 
@@ -14,7 +15,7 @@ export function createNearby(things, { radius, hysteresis, checkEvery }) {
   function check(x, z) {
     const came = [];
     const went = [];
-    for (const t of things) {
+    for (const t of things.values()) {
       const n = isNear(t, x, z);
       if (n && !near.has(t.id)) { near.add(t.id); came.push(t.id); } else if (!n && near.has(t.id)) { near.delete(t.id); went.push(t.id); }
     }
@@ -24,6 +25,9 @@ export function createNearby(things, { radius, hysteresis, checkEvery }) {
   return {
     near,
     check,
+    add(list) { for (const t of list) things.set(t.id, t); since = Infinity; },
+    /** Forget things (their tile is gone). They are not reported as gone far: the style is told they are removed. */
+    remove(list) { for (const t of list) { things.delete(t.id); near.delete(t.id); } },
     /** Call every step: checks every `checkEvery` seconds, otherwise returns null. */
     update(dt, x, z) {
       since += dt;

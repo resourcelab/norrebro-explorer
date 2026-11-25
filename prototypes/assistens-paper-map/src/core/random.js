@@ -41,3 +41,10 @@ export function tileNoise(size, cells, r) {
   }
   return out;
 }
+
+/** A seed from a string (a tile key, a site id): FNV-1a, so every tile has its own fixed random stream. */
+export function seedOf(text) {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 0x01000193);
+  return h >>> 0;
+}

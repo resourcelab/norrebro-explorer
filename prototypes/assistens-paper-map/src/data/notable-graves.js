@@ -1,4 +1,4 @@
-/** Who rests at the notable graves (names as in assistens-osm.js `tombs`): shown when the walker comes close. */
+/** Who rests at the notable graves (names as in data/sites/assistens.js `tombs`): shown when the walker comes close. */
 export const NOTABLE_GRAVES = {
   'H.C. Andersen': 'writer of fairy tales, 1805–1875',
   'Søren Kierkegaard': 'philosopher, 1813–1855',

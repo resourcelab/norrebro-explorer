@@ -1,58 +1,73 @@
 /**
- * Placement outside the walls: street and park trees, playground equipment, bike racks, benches and cycle routes.
- * Positions only; world/build-neighbourhood.js turns them into paper pieces.
+ * The neighbourhood's rules, applied one TILE at a time: street and park trees, playgrounds and their kit, bike racks
+ * and benches, corner signs where named streets meet. Positions only; core/world.js turns them into things.
+ *
+ * Every rule here reads only the tile it is given (its features come with a margin, see scripts/pack-world.mjs) and the
+ * sites, and draws from the tile's own random stream, so a tile plans the same whichever tiles are loaded round it.
+ * A thing belongs to the tile its position falls in.
+ *
+ * Each function takes a planning context `t`:
+ *   t.tile          the loaded tile (core/world/store.js): rect, reach, buildings, streets, areas, trees, props, index
+ *   t.rnd           the tile's random stream
+ *   t.inRegion      (x, z) -> inside the play area
  */
-import { SURROUNDINGS } from '../../data/surroundings.js';
-import { toUnits } from '../map/units.js';
-import { inPolygon, boundsOf, polylineDistance, segmentIntersection, segmentDistance } from '../map/math.js';
-import { SCALE } from '../../config.js';
-import { insideCemetery, wallDistance } from '../map/cemetery.js';
-import { inRegion, AREAS, STREETS, buildingAt, streetDistance } from '../map/neighbourhood.js';
+import { inPolygon, boundsOf, polylineDistance, segmentIntersection, segmentDistance, centroid } from '../map/math.js';
+import { lonLatToUnits, unitsOf } from '../geo.js';
+import { PLAYGROUND_POINTS } from '../../data/landmarks.js';
+import { siteAt, siteEdgeDistance } from '../sites/index.js';
 
-/**
- * Hans Tavsens Park's playground is mapped as a point (no area), at its south end. Units from the cemetery centroid;
- * the sandpit drawn round it is an ellipse of these radii.
- */
-const HANS_TAVSENS_PLAYGROUND = { x: -34.9, z: 70.6, rx: 4.6, rz: 3.6 };
-/** The streets cyclists ride (both directions, back and forth along each mapped stretch). */
-const CYCLE_STREETS = new Set(['Nørrebrogade', 'Jagtvej', 'Kapelvej', 'Guldbergsgade']);
 const STREET_TREE_KINDS = ['linden', 'linden', 'maple', 'chestnut'];
 const PLAYGROUND_KIT = ['swings', 'slide', 'climber', 'seesaw'];
 
-/** Free ground outside the walls: in the region, not in a building (with margin r), clear of the cemetery wall. */
-const outsideFree = (x, z, r = 0.6) => inRegion(x, z) && !insideCemetery(x, z) && !buildingAt(x, z, r) && wallDistance(x, z) > 1.2;
+const owns = ({ rect }, x, z) => x >= rect.x0 && x < rect.x1 && z >= rect.z0 && z < rect.z1;
+
+/** True within the tile's reach: its square plus the packing margin, where it knows every building and street. */
+const inReach = ({ reach }, x, z) => x >= reach.x0 && x <= reach.x1 && z >= reach.z0 && z <= reach.z1;
+
+/**
+ * Free ground outside the sites: within the tile's reach, in the play area, not in a building (with margin r), clear
+ * of site walls. Outside its reach a tile can't see the ground, so nothing is put there.
+ */
+export const freeGround = (t, x, z, r = 0.6) => inReach(t.tile, x, z) && t.inRegion(x, z) && !siteAt(x, z) && !t.tile.index.buildingAt(x, z, r) && siteEdgeDistance(x, z) > 1.2;
 
 /** Mapped street and park trees, thinned to 2.6 units apart. Returns [{ x, z, kind }]. */
-export function planStreetTrees(rnd) {
+export function planStreetTrees(t) {
   const trees = [];
-  for (const mapped of SURROUNDINGS.trees) {
-    const [x, z] = toUnits(mapped);
-    if (!outsideFree(x, z) || streetDistance(x, z) < -0.2) continue;
-    if (trees.some((t) => Math.hypot(t.x - x, t.z - z) < 2.6)) continue;
-    trees.push({ x, z, kind: STREET_TREE_KINDS[Math.floor(rnd() * STREET_TREE_KINDS.length)] });
+  for (const [x, z] of t.tile.trees) {
+    if (!freeGround(t, x, z) || t.tile.index.streetDistance(x, z) < -0.2) continue;
+    if (trees.some((q) => Math.hypot(q.x - x, q.z - z) < 2.6)) continue;
+    trees.push({ x, z, kind: STREET_TREE_KINDS[Math.floor(t.rnd() * STREET_TREE_KINDS.length)] });
   }
   return trees;
 }
 
-/** Playgrounds: every mapped play area in the region, plus Hans Tavsens Park's (a sandpit). Returns [{ pts, sandpit }]. */
-export function planPlaygrounds() {
-  const playgrounds = AREAS.filter((a) => a.kind === 'playground' && a.pts.some(([x, z]) => inRegion(x, z))).map((a) => ({ pts: a.pts, sandpit: false }));
-  const { x, z, rx, rz } = HANS_TAVSENS_PLAYGROUND;
-  const ellipse = Array.from({ length: 12 }, (_, k) => [x + Math.cos((k / 12) * 2 * Math.PI) * rx, z + Math.sin((k / 12) * 2 * Math.PI) * rz]);
-  playgrounds.push({ pts: ellipse, sandpit: true });
-  return playgrounds;
+/**
+ * Playgrounds owned by this tile (their middle is in it): every mapped play area in the play area, plus the ones
+ * OpenStreetMap maps as a point, drawn as a sandpit (data/landmarks.js PLAYGROUND_POINTS). Returns [{ pts, sandpit }].
+ */
+export function planPlaygrounds(t) {
+  const out = t.tile.areas
+    .filter((a) => a.kind === 'playground' && owns(t.tile, ...centroid(a.pts)) && a.pts.some(([x, z]) => t.inRegion(x, z)))
+    .map((a) => ({ pts: a.pts, sandpit: false }));
+  for (const p of PLAYGROUND_POINTS) {
+    const [x, z] = lonLatToUnits(...p.lonLat);
+    if (!owns(t.tile, x, z)) continue;
+    const [rx, rz] = [unitsOf(p.rx), unitsOf(p.rz)];
+    out.push({ pts: Array.from({ length: 12 }, (_, k) => [x + Math.cos((k / 12) * 2 * Math.PI) * rx, z + Math.sin((k / 12) * 2 * Math.PI) * rz]), sandpit: true });
+  }
+  return out;
 }
 
 /** Up to four pieces of kit per playground (swings, slide, climbing dome, seesaw), 2.6 units apart. Returns [{ x, z, kind }]. */
-export function planPlaygroundKit(playgrounds, rnd) {
+export function planPlaygroundKit(t, playgrounds) {
   const kit = [];
   for (const pg of playgrounds) {
     const { x0, z0, x1, z1 } = boundsOf(pg.pts);
-    let k = Math.floor(rnd() * PLAYGROUND_KIT.length);
+    let k = Math.floor(t.rnd() * PLAYGROUND_KIT.length);
     for (let tries = 0, placed = 0; tries < 60 && placed < 4; tries++) {
-      const x = x0 + rnd() * (x1 - x0);
-      const z = z0 + rnd() * (z1 - z0);
-      if (!inPolygon(x, z, pg.pts) || !outsideFree(x, z, 0.8) || kit.some((e) => Math.hypot(e.x - x, e.z - z) < 2.6)) continue;
+      const x = x0 + t.rnd() * (x1 - x0);
+      const z = z0 + t.rnd() * (z1 - z0);
+      if (!inPolygon(x, z, pg.pts) || !freeGround(t, x, z, 0.8) || kit.some((e) => Math.hypot(e.x - x, e.z - z) < 2.6)) continue;
       kit.push({ x, z, kind: PLAYGROUND_KIT[k++ % PLAYGROUND_KIT.length] });
       placed++;
     }
@@ -61,32 +76,26 @@ export function planPlaygroundKit(playgrounds, rnd) {
 }
 
 /** Mapped bike racks and benches on the pavements, thinned. Returns { racks: [[x, z]], benches: [[x, z]] }. */
-export function planStreetFurniture() {
+export function planStreetFurniture(t) {
   const racks = [];
   const benches = [];
-  for (const [mx, my, kind] of SURROUNDINGS.props) {
-    const [x, z] = toUnits([mx, my]);
-    if (!outsideFree(x, z, 0.4) || streetDistance(x, z) < -0.3) continue;
+  for (const [x, z, kind] of t.tile.props) {
+    if (!freeGround(t, x, z, 0.4) || t.tile.index.streetDistance(x, z) < -0.3) continue;
     if (kind === 'bikes' && racks.every((q) => Math.hypot(q[0] - x, q[1] - z) > 3.5)) racks.push([x, z]);
     if (kind === 'bench' && benches.every((q) => Math.hypot(q[0] - x, q[1] - z) > 2.4)) benches.push([x, z]);
   }
   return { racks, benches };
 }
 
-/** Street stretches cyclists ride along: [{ name, pts }]. */
-export function planCycleRoutes() {
-  return STREETS.filter((s) => CYCLE_STREETS.has(s.name) && s.pts.length >= 2).map((s) => ({ name: s.name, pts: s.pts }));
-}
-
-// ---- wayfinding: corner signs, fingerposts ---------------------------------------------------------------------------
+// ---- corner signs ----------------------------------------------------------------------------------------------------
 
 const JUNCTION_SNAP = 1.0; // units: a street ending this close to another street meets it
 const CORNER_CLUSTER = 6; // units: junction points closer than this are one corner
 const SIGN_SPACING = 9; // units: no two signs closer than this
 
-/** Where named streets meet: [{ x, z, names: Set }]. T-junctions (one street ends on another) and crossings. */
-function namedJunctions() {
-  const named = STREETS.filter((s) => s.name);
+/** Where named streets meet: [{ x, z, names: Set, streets }]. T-junctions (one street ends on another) and crossings. */
+export function namedJunctions(streets) {
+  const named = streets.filter((s) => s.name);
   const hits = [];
   const add = (x, z, a, b, sa, sb) => hits.push({ x, z, names: new Set([a, b]), streets: [sa, sb] });
   for (let i = 0; i < named.length; i++) {
@@ -107,12 +116,15 @@ function namedJunctions() {
       }
     }
   }
-  // merge hits into corners
+  // merge hits into corners, in a fixed order (west to east), so neighbouring tiles that both see a corner on their
+  // shared edge find the same corner at the same spot, and exactly one of them owns it
+  hits.sort((p, q) => p.x - q.x || p.z - q.z);
   const corners = [];
   for (const h of hits) {
-    const c = corners.find((k) => Math.hypot(k.x - h.x, k.z - h.z) < CORNER_CLUSTER);
-    if (c) { for (const n of h.names) c.names.add(n); c.streets.push(...h.streets); } else corners.push({ ...h, streets: [...h.streets] });
+    const c = corners.find((k) => Math.hypot(k.x0 - h.x, k.z0 - h.z) < CORNER_CLUSTER);
+    if (c) { for (const n of h.names) c.names.add(n); c.streets.push(...h.streets); c.n++; c.sx += h.x; c.sz += h.z; } else corners.push({ ...h, x0: h.x, z0: h.z, n: 1, sx: h.x, sz: h.z, streets: [...h.streets] });
   }
+  for (const c of corners) { c.x = c.sx / c.n; c.z = c.sz / c.n; }
   return corners;
 }
 
@@ -130,67 +142,28 @@ function directionNear(street, x, z) {
 }
 
 /**
- * A sign at each corner where named streets meet: on the pavement in the corner nearest the camera (south) that is
- * clear of buildings, naming up to two of the streets. Returns [{ x, z, names: string[] }].
+ * A sign at each corner in this tile where named streets meet: on the pavement in the corner nearest the camera
+ * (south) that is clear of buildings, naming up to two of the streets. Returns [{ x, z, names: string[] }].
  */
-export function planCornerSigns() {
+export function planCornerSigns(t) {
+  // every corner the tile can see (its own and its neighbours' within reach), in a fixed order, spaced out; then only
+  // its own are kept. Neighbouring tiles see the same corners round their shared edge, so they space them the same way.
   const signs = [];
-  for (const c of namedJunctions()) {
-    if (!inRegion(c.x, c.z) || insideCemetery(c.x, c.z)) continue;
+  for (const c of namedJunctions(t.tile.streets)) {
+    if (!inReach(t.tile, c.x, c.z) || !t.inRegion(c.x, c.z) || siteAt(c.x, c.z)) continue;
     const [sa, sb] = c.streets;
     const a = directionNear(sa, c.x, c.z);
     const b = directionNear(sb, c.x, c.z);
     const sin = Math.abs(a[0] * b[1] - a[1] * b[0]);
     if (sin < 0.3) continue; // nearly parallel: a fork, not a corner
-    const t = (sa.half + 0.8) / sin;
-    const s = (sb.half + 0.8) / sin;
+    const ta = (sa.half + 0.8) / sin;
+    const tb = (sb.half + 0.8) / sin;
     const options = [];
-    for (const i of [-1, 1]) for (const j of [-1, 1]) options.push([c.x + b[0] * s * i + a[0] * t * j, c.z + b[1] * s * i + a[1] * t * j]);
+    for (const i of [-1, 1]) for (const j of [-1, 1]) options.push([c.x + b[0] * tb * i + a[0] * ta * j, c.z + b[1] * tb * i + a[1] * ta * j]);
     options.sort((p, q) => q[1] - p[1]); // the corner nearest the camera first
-    const spot = options.find(([x, z]) => outsideFree(x, z, 0.3) && streetDistance(x, z) > -0.1);
+    const spot = options.find(([x, z]) => freeGround(t, x, z, 0.3) && t.tile.index.streetDistance(x, z) > -0.1);
     if (!spot || signs.some((g) => Math.hypot(g.x - spot[0], g.z - spot[1]) < SIGN_SPACING)) continue;
-    signs.push({ x: spot[0], z: spot[1], names: [...c.names].slice(0, 2) });
+    signs.push({ x: spot[0], z: spot[1], names: [...c.names].sort().slice(0, 2), own: owns(t.tile, c.x, c.z) });
   }
-  return signs;
-}
-
-/** The nearest free pavement spot to (x, z), searching outward; null if none within `reach` units. */
-function freeSpotNear(x, z, reach = 12) {
-  for (let r = 0; r <= reach; r += 0.5) {
-    for (let k = 0; k < 16; k++) {
-      const px = x + Math.cos((k / 16) * 2 * Math.PI) * r;
-      const pz = z + Math.sin((k / 16) * 2 * Math.PI) * r;
-      if (outsideFree(px, pz, 0.4) && streetDistance(px, pz) > 0 && streetDistance(px, pz) < 1.5) return [px, pz];
-    }
-  }
-  return null;
-}
-
-/**
- * Fingerposts to the far places: one by the cemetery gate nearest the start, pointing to all of them, and one at the
- * edge of the walkable area nearest each place. Returns [{ x, z, arms: [{ name, dx, metres }] }].
- */
-export function planFingerposts(far, start) {
-  const posts = [];
-  const armsFrom = (x, z, places) => places.map((f) => {
-    const [tx, tz] = f.pointFrom(x, z);
-    return { name: f.name, dx: tx - x, metres: Math.round((Math.hypot(tx - x, tz - z) / SCALE) / 50) * 50 };
-  });
-  const startSpot = freeSpotNear(start[0], start[1], 40);
-  if (startSpot) posts.push({ x: startSpot[0], z: startSpot[1], arms: armsFrom(...startSpot, far) });
-  for (const f of far) {
-    const [tx, tz] = f.pointFrom(start[0], start[1]);
-    // walk from the start toward the place and stop at the edge of the walkable area
-    const L = Math.hypot(tx - start[0], tz - start[1]);
-    let edge = start;
-    for (let d = 0; d < L; d += 1) {
-      const x = start[0] + ((tx - start[0]) * d) / L;
-      const z = start[1] + ((tz - start[1]) * d) / L;
-      if (!inRegion(x, z)) break;
-      edge = [x, z];
-    }
-    const spot = freeSpotNear(edge[0] - Math.sign(tx - start[0]) * 6, edge[1] - Math.sign(tz - start[1]) * 6, 20);
-    if (spot && posts.every((p) => Math.hypot(p.x - spot[0], p.z - spot[1]) > 20)) posts.push({ x: spot[0], z: spot[1], arms: armsFrom(...spot, [f]) });
-  }
-  return posts;
+  return signs.filter((g) => g.own).map(({ own: _own, ...g }) => g);
 }

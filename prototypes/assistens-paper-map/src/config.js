@@ -59,8 +59,28 @@ export const ZOOMS = {
  */
 export const NEARBY = { radius: 60, hysteresis: 6, checkEvery: 0.3 };
 
-/** Where the walker starts (world units): the open path just west of the chapel. */
-export const START = [12, 23.2];
+/*
+ * Places are in the world frame (src/core/geo.js): metres from the imported area's north-west corner, x east, z south.
+ * The game works in units (metres × SCALE); the unit versions below are what the code uses.
+ */
+
+/**
+ * The play area (metres): where the walker may go, and the tiles a style may print up front. Today: Assistens
+ * Kirkegård and the streets, blocks and parks round it, about 820 × 830 m. Growing the map starts here.
+ */
+export const PLAY_AREA = { x0: 138, z0: 213, x1: 958, z1: 1043 };
+export const REGION = { x0: PLAY_AREA.x0 * SCALE, z0: PLAY_AREA.z0 * SCALE, x1: PLAY_AREA.x1 * SCALE, z1: PLAY_AREA.z1 * SCALE };
+
+/** Where the walker starts (metres, then units): the open path just west of the chapel. */
+export const START_AT = [657.9, 748.8];
+export const START = [START_AT[0] * SCALE, START_AT[1] * SCALE];
+
+/**
+ * Tiles load round the walker as he walks (core/world/store.js): every tile within `load` units of him is loaded, and
+ * a tile is dropped once it is more than `keep` units away (unless a style has pinned it). `load` must reach beyond
+ * NEARBY.radius, so anything near is always on a loaded tile.
+ */
+export const TILES = { load: 80, keep: 104, checkEvery: 0.5 };
 
 /** Home on the minimap: for now where the walker starts. Later: the player's own address (or their Airbnb). */
 export const HOME = { at: START, label: 'Start' };

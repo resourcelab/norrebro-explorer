@@ -22,11 +22,12 @@ playwright install chromium
 cd prototypes/assistens-paper-map
 npm run dev        # http://localhost:5173/src/ (ES modules need a local server); add ?style=flat for the flat map
 npm test           # map and walking-rule tests (Node, no browser)
-npm run build      # dist/assistens-kirkegaard-paper-walk.html
+npm run build      # dist/: index.html + world/ (hosted), and the offline assistens-kirkegaard-paper-walk.html
 npm run capture    # headless screenshots into docs/frames/ (needs Playwright)
 ```
 
-Commit the rebuilt `dist/` page together with the source change, so the double-click copy stays current.
+Commit the rebuilt offline page (`dist/assistens-kirkegaard-paper-walk.html`) together with the source change, so the
+double-click copy stays current. The rest of `dist/` and the packed `world/` are rebuilt by CI and not committed.
 
 ## Code conventions
 
@@ -46,7 +47,7 @@ Commit the rebuilt `dist/` page together with the source change, so the double-c
   How to write a style: `prototypes/assistens-paper-map/src/styles/README.md`.
 - **Layers inside the core:** `data/` holds no logic, `core/map/` holds no randomness, `core/plan/` decides positions
   only, and `core/world.js` turns them into things.
-- **Generated files** (`src/data/surroundings.js`, `data/world/`, `dist/`) are never edited by hand: change the tool and
+- **Generated files** (`data/world/`, the prototype's `world/` and `dist/`) are never edited by hand: change the tool and
   regenerate.
 
 ## Map data

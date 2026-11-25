@@ -10,7 +10,6 @@
 import * as P2 from 'papercraft/lib/paperkit-2d.js';
 import { PALETTE as C } from '../settings.js';
 import { besideSegment } from '../../../core/map/math.js';
-import { STREETS, AREAS, BUILDINGS, CONTEXT, REGION } from '../../../core/map/neighbourhood.js';
 
 /** Area fills, and the order they are laid down in (later ones on top). */
 const AREA_COLOURS = {
@@ -32,20 +31,43 @@ const CONTEXT_VEIL = 0.32;
 /** Street names: repeated every this many units along a street, and never closer than this to the same name. */
 const NAME_REPEAT = 34;
 
-export function printNeighbourhoodGround(k, plan) {
+/** @param map game.map: its overview (beyond the play area) and the loaded tiles' features (inside it) */
+export function printNeighbourhoodGround(k, map) {
+  const REGION = map.region;
   const byWidth = (a, b) => a.width - b.width;
-  const contextRoads = CONTEXT.streets.filter((s) => s.width >= ROAD_MIN_WIDTH).sort(byWidth);
-  printAreas(k, CONTEXT.areas);
-  printStreets(k, contextRoads, CONTEXT.streets.filter((s) => s.width < ROAD_MIN_WIDTH));
-  printBuildings(k, CONTEXT.buildings);
+  const context = map.overview;
+  const contextRoads = context.streets.filter((s) => s.width >= ROAD_MIN_WIDTH).sort(byWidth);
+  // the overview, printed only outside the play area (inside it the tiles' finer outlines are printed instead)
+  k.g.save();
+  clipOutside(k, REGION);
+  printAreas(k, context.areas);
+  printStreets(k, contextRoads, context.streets.filter((s) => s.width < ROAD_MIN_WIDTH));
+  printBuildings(k, context.buildings);
+  k.g.restore();
   veilOutside(k, REGION);
 
-  const roads = STREETS.filter((s) => s.width >= ROAD_MIN_WIDTH).sort(byWidth);
-  printAreas(k, AREAS);
-  printSandpits(k, plan);
-  printStreets(k, roads, STREETS.filter((s) => s.width < ROAD_MIN_WIDTH));
-  printBuildings(k, BUILDINGS.map((b) => b.pts));
-  printStreetNames(k, [...roads, ...contextRoads]);
+  const streets = map.features('streets');
+  const roads = streets.filter((s) => s.width >= ROAD_MIN_WIDTH).sort(byWidth);
+  printAreas(k, map.features('areas'));
+  printSandpits(k, map);
+  printStreets(k, roads, streets.filter((s) => s.width < ROAD_MIN_WIDTH));
+  printBuildings(k, map.features('buildings').map((b) => b.pts));
+  printStreetNames(k, [...roads, ...contextRoads.filter((s) => !s.pts.every(([x, z]) => inside(REGION, x, z)))]);
+}
+
+const inside = (r, x, z) => x > r.x0 && x < r.x1 && z > r.z0 && z < r.z1;
+
+/** Clip drawing to everything outside the rectangle (a little inside its edge, so the two prints meet). */
+function clipOutside({ g, X, Z, W, H }, r) {
+  const m = 2; // units of overlap
+  g.beginPath();
+  g.rect(0, 0, W, H);
+  g.moveTo(X(r.x0 + m), Z(r.z0 + m));
+  g.lineTo(X(r.x0 + m), Z(r.z1 - m));
+  g.lineTo(X(r.x1 - m), Z(r.z1 - m));
+  g.lineTo(X(r.x1 - m), Z(r.z0 + m));
+  g.closePath();
+  g.clip('evenodd');
 }
 
 /** A paper-coloured veil over everything outside the walkable area. */
@@ -85,8 +107,8 @@ function printAreas(k, areas) {
   }
 }
 
-function printSandpits({ torn }, plan) {
-  for (const pg of plan.playgrounds) if (pg.sandpit) torn(pg.pts, SANDPIT);
+function printSandpits({ torn }, map) {
+  for (const tile of map.tiles()) for (const pg of tile.plan.playgrounds) if (pg.sandpit) torn(pg.pts, SANDPIT);
 }
 
 function printStreets(k, roads, footways) {
