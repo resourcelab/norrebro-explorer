@@ -9,8 +9,8 @@ street you are on.
 - **Play it online:** [resourcelab.github.io/norrebro-explorer/](https://resourcelab.github.io/norrebro-explorer/), published from `main`.
 - **Open it:** double-click `dist/assistens-kirkegaard-paper-walk.html` (one self-contained file with the whole area
   baked in, works offline).
-- **Controls:** arrows / WASD walk · Shift run · Z (or the button) switches between the walking view and the map
-  view · click the minimap to switch too · drag to look around · click the scene to fold the world flat and back up.
+- **Controls:** arrows / WASD walk · Shift run · Z (or the button) steps through the zooms: street, blocks, map ·
+  click the minimap to switch too · drag to look around · click the scene to fold the world flat and back up.
 - **URL options:** `?style=flat` for the flat map style · `?mood=dusk` or `?mood=night` (papercraft) · `?zoom=map` opens
   on the map view · `?capture` hides the overlays (for screenshots; `?capture&hud` keeps them).
 
@@ -21,9 +21,14 @@ look (colours, camera, lens) lives in its `settings.js`.
 
 - **True layout, quicker legs:** every street, block and path is where it really is (1 unit = 5 m). Walking is
   2.5 units/s (12.5 m/s), so crossing a 300 m chunk takes about 25 seconds; Shift runs 2.2× faster.
-- **Toy scale:** buildings are true height (3 m storeys), streets are drawn 1.4× wider than mapped, landmarks 1.3×
-  taller than life. People, trees and street furniture are larger than life (a real person would be a speck) but stay
-  smaller than the buildings round them.
+- **Toy scale:** what is built is true height: 3 m storeys over a 5 m shop floor, trees, sheds and walls as tall as
+  real ones. People and what they use (benches, bike racks, signs, play kit, graves) are 2× life, so the walker
+  (3.5 m) stands under the shop signs, between the doors. Streets are drawn 1.4× wider than mapped, landmarks 1.3×
+  taller than life. All of it is `TOY` in `src/config.js`, in metres as drawn.
+- **Shops on the ground floors:** every named shop, café, bakery, school and library OpenStreetMap places in a block
+  (about 130 in the play area) gets a shopfront on that block's street facade: a lit window, a door, an awning
+  coloured by kind (food, shops, everyday, culture) and its name on the fascia. Stand in front of one and the label
+  names it ("Lagkagehuset · Bageri · bakery").
 - **Landmarks:** four churches (Hellig Kors, Simeons, Brorsons, Anna) stand on their real footprints with a green copper
   spire, and flags mark Nørrebros Runddel, Folkets Park and Hans Tavsens Park. They stand whatever the distance. The
   towers' exact spot and height are generic, not surveyed. Fingerposts point to the lakes and Superkilen, beyond the
@@ -33,7 +38,8 @@ look (colours, camera, lens) lives in its `settings.js`.
 - **Minimap** (bottom right): north up, about 600 m across, "you are here" arrow, home (for now the start; later the
   player's address), landmarks, arrows on the rim to the lakes and Superkilen, the edge of the walkable area dashed,
   and a compass (N Ø S V) turned the way the 3D view is turned.
-- **Two zooms:** close for walking (46 units back, 55° down) and a map view (~400 m across, 72° down, less blur).
+- **Three zooms:** the street (~70 m across, 46° down: the shop signs read), the blocks round you (~185 m) and a map
+  view (~475 m across, 72° down, less blur).
 - **Near stands up, far lies flat:** pieces within 300 m of the walker stand; further ones fold flat and are hidden,
   and the ground shows them printed (roofs, streets, parks). Blocks are built the first time you come near, a few per
   frame, so the load stays quick and walking never stutters. Beyond the walkable area, a veiled ring of context
@@ -42,7 +48,7 @@ look (colours, camera, lens) lives in its `settings.js`.
   and those more than ~520 m away are dropped, with everything on them. The flat style streams this way now; papercraft
   still loads the whole play area up front, because its ground is printed as one sheet.
 
-Status: v0.5 (one coordinate frame, world tiles that stream), 2026-11-25. The first slice of [Nørrebro Explorer](../../README.md).
+Status: v0.6 (styles fully apart from papercraft, toy scale against true buildings, shopfronts), 2026-11-27. The first slice of [Nørrebro Explorer](../../README.md).
 
 ![Nørrebrogade side](docs/2026-11-24-norrebrogade-side.png)
 ![Hans Tavsens Park](docs/2026-11-24-hans-tavsens-park.png)
@@ -53,10 +59,11 @@ From the repo root run `npm install` once. Then, in this folder:
 
 ```sh
 npm run dev        # pack the world, serve this folder, then open http://localhost:5173/src/
-npm test           # pack the world, then the core, map and wayfinding tests (Node, no browser needed)
+npm test           # pack the world, then the core, map, wayfinding, shop and style tests (Node, no browser)
 npm run build      # pack the world, then dist/index.html + dist/world/ (hosted) and the offline single file
 npm run pack-world # ../../data/world (full detail) -> world/ (what the game loads); dev, test and build run it first
-npm run capture    # headless overview frames into docs/frames/ (needs Python + Playwright)
+npm run capture    # headless overview frames into docs/frames/ (needs Python + Playwright); any style:
+                   # python3 tools/capture.py . overview "bakery:stand=104.2,53" --style flat
 ```
 
 The dev page loads three.js from a CDN and needs a local server (ES modules and tiles don't load from `file://`).
@@ -114,14 +121,17 @@ src/
 ├── data/                    hand-kept data, no logic
 │   ├── sites/assistens.js   the cemetery from OpenStreetMap: outline, paths, walls, gates, trees, benches, graves
 │   ├── landmarks.js         churches, flags and far places to steer by (longitude, latitude); point playgrounds
+│   ├── places.js            what to call shops and other places, by type (Danish · English)
 │   └── notable-graves.js    who rests where (label text)
 ├── core/                    the game: no graphics, no style
 │   ├── geo.js               the world frame: longitude/latitude ↔ metres ↔ units (the only place that projects)
 │   ├── world/               tiles: store (load, unload), features (packed data → units), spatial index, loaders
 │   ├── map/                 math, landmarks, the walk rules
-│   ├── plan/                where things stand (seeded): per-tile neighbourhood rules; fingerposts and cycle routes
+│   ├── plan/                where things stand (seeded): per-tile neighbourhood rules and shopfronts; fingerposts
+│   │                        and cycle routes
 │   ├── sites/               places with their own plan, laid over the tiles: assistens/ (map, plan, things)
 │   ├── world.js             the world as things (the contract with the styles): per tile, per site, always there
+│   ├── kinds.js             every kind of thing and its category (a style draws unknown kinds by category)
 │   ├── solid.js             how close the walker may come to each kind of thing
 │   ├── game.js              the game: world, streaming, step and state, attach(style), game.map for drawing
 │   ├── input.js             keyboard → intent (and a scripted input for tests)
@@ -132,7 +142,7 @@ src/
 │   ├── places.js            which place and street you are at
 │   └── random.js            seeded randomness
 ├── styles/
-│   ├── README.md            the style interface
+│   ├── README.md            the style interface (each style also has kinds.js: the kinds it draws itself)
 │   ├── index.js             the list of styles (?style=<name>)
 │   ├── papercraft/          the pop-up paper diorama
 │   │   ├── index.js         the style: harness in drive mode, build, near/far, zoom
@@ -147,8 +157,10 @@ tests/
 ├── helpers.mjs              the world from disk, a headless game with a null style
 ├── core.test.mjs            the core runs headless: things, collision, walking, near/far, tiles streaming, game runs
 ├── map.test.mjs             geometry, the world frame, the Assistens plan against the tiles, the index, reachability
-└── wayfinding.test.mjs      landmarks, corner signs, fingerposts, cyclists, wider streets, the overview
-tools/capture.py             headless review screenshots
+├── wayfinding.test.mjs      landmarks, corner signs, fingerposts, cyclists, wider streets, the overview
+├── shops.test.mjs           shopfronts on street facades, not overlapping; "where am I" names the shop; toy scale
+└── styles.test.mjs          every style draws every kind (or falls back by category); the styles index
+tools/capture.py             headless review screenshots, any style (window.__capture)
 vendor/papercraft/           the papercraft kit (MIT, see its README for the local changes, including drive mode)
 scripts/
 ├── pack-world.mjs           ../../data/world → world/ (packed tiles + overview)

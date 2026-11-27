@@ -20,7 +20,7 @@ const BASE_PPU = 4; // pixels per unit in the off-screen base map
 const UPDATE_EVERY = 0.1; // seconds
 const PATH = '#efe4c8';
 
-const AREA_FILL = { water: '#9cc3d5', park: '#b9cf95', grass: '#c3d5a2', garden: '#b5cd96', pitch: '#a7c98f', playground: '#e6cf92', cemetery: '#aac58e', square: '#e4ddcb', wood: '#9dbb83', scrub: '#acc290', schoolyard: '#e6dcc4', parking: '#d9d4c8', flowerbed: '#d9b3c0' };
+const AREA_FILL = { water: '#9cc3d5', park: '#b9cf95', grass: '#c3d5a2', garden: '#b5cd96', pitch: '#a7c98f', playground: '#e6cf92', cemetery: '#aac58e', square: '#e4ddcb', wood: '#9dbb83', scrub: '#acc290', schoolyard: '#e6dcc4', parking: '#d9d4c8', flowerbed: '#d9b3c0', forecourt: '#ddd2b8' };
 
 /** The static map: the overview and the sites, in a canvas covering the whole imported area. */
 function drawBase(map) {
@@ -40,8 +40,7 @@ function drawBase(map) {
   g.fillStyle = '#efe7d4';
   g.fillRect(0, 0, W, H);
   for (const a of overview.areas) { g.fillStyle = AREA_FILL[a.kind] ?? '#e2dccb'; poly(a.pts); g.fill(); }
-  g.fillStyle = AREA_FILL.cemetery;
-  for (const site of map.sites) { poly(site.ground.outline); g.fill(); }
+  for (const site of map.sites) for (const a of site.ground.areas) { g.fillStyle = AREA_FILL[a.kind] ?? AREA_FILL.cemetery; poly(a.pts); g.fill(); }
   g.fillStyle = '#d8c3ad';
   for (const pts of overview.buildings) { poly(pts); g.fill(); }
   g.lineCap = 'round';

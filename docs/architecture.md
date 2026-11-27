@@ -69,6 +69,14 @@ stand in for hand-written landmarks.
     within 400 m of the walker and drops those beyond ~520 m; each tile is planned on its own with its own seed (the
     same answer whatever else is loaded); a spatial index answers "what is here?" for collision and planning.
     Assistens Kirkegård is a **site**: a hand-kept, more detailed plan laid over the tiles it covers.
+  - **Styles are apart from papercraft.** Every thing has a category (`core/kinds.js`), so a style draws kinds it
+    doesn't know plainly instead of breaking; each style lists the kinds it draws itself (`kinds.js`), checked by a
+    test. Sites hand styles plain ground layers. The page's credit and hint, and the review capture hook, come from the
+    style.
+  - **Toy scale against true buildings:** built things at true height (5 m shop floor, 3 m storeys), people and what
+    they use at 2× life (walker 3.5 m), in metres in `config.js` `TOY`; three zooms (street, blocks, map).
+  - **Shopfronts:** named shops, cafés, schools from OpenStreetMap stand on their block's street facade
+    (`core/plan/shops.js`), and "where am I" names them.
 - **Next:** print the papercraft ground tile by tile (it is still one sheet for the play area, so papercraft pins those
   tiles), then grow the play area chunk by chunk (`PLAY_AREA` in `config.js`). Landmark texts. When a second app needs
   the core, it moves from the prototype to the repo root (`core/`, `styles/`) unchanged.

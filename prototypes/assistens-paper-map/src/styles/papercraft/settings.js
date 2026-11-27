@@ -11,7 +11,7 @@
  *   TYPES    crosses (trees), single cards (grave plots, benches, lamps, critters), prism folds (walls, hedges, gate
  *            posts, sheds), a box fold (the chapel).
  */
-import { ZOOMS } from '../../config.js';
+import { ZOOMS, TOY, SCALE } from '../../config.js';
 
 export const PALETTE = {
   ground: '#cfc8b2',
@@ -46,9 +46,25 @@ export const PALETTE = {
  * whole map reads.
  */
 export const LENS = {
-  walk: { dist: ZOOMS.walk.across / 0.8, pitch: 55, pitchMin: 44, pitchMax: 64, haze: [34, 95], blur: { focusBand: 0.3, ramp: 0.3, maxBlur: 14 } },
+  street: { dist: ZOOMS.street.across / 0.8, pitch: 46, pitchMin: 36, pitchMax: 60, haze: [22, 70], blur: { focusBand: 0.5, ramp: 0.45, maxBlur: 4 } }, // shop names must read
+  neighbourhood: { dist: ZOOMS.neighbourhood.across / 0.8, pitch: 55, pitchMin: 44, pitchMax: 64, haze: [34, 95], blur: { focusBand: 0.3, ramp: 0.3, maxBlur: 14 } },
   map: { dist: ZOOMS.map.across / 0.8, pitch: 72, pitchMin: 62, pitchMax: 80, haze: [140, 260], blur: { focusBand: 0.7, ramp: 0.5, maxBlur: 5 } },
 };
 
 /** Pieces not built yet are built a few per frame: at most buildPerStep, within budgetMs. */
 export const BUILD = { buildPerStep: 4, budgetMs: 5, startShare: 0.5 };
+
+/**
+ * Toy scale in paper. Each piece's card is drawn at some height at scale 1 (BASE, units, measured with
+ * window.__style.heights() in the browser); scaleOf(kind) is the scale that makes it TOY.heights[kind] metres tall
+ * (config.js), so all the proportions live in one place for every style. Re-measure a BASE when its art changes.
+ */
+const BASE = {
+  walker: 3.1, cyclist: 3.1, bench: 1.14, bikeRack: 0.8, tap: 1.2, lamp: 3.0, sign: 2.3, fingerpost: 2.8,
+  grave: 1.6, notableGrave: 2.2, playground: 2.4, critter: 0.85, tree: 8.0, shed: 2.6, chapel: 6.2,
+};
+export const scaleOf = (kind) => (TOY.heights[kind] * SCALE) / BASE[kind];
+/** Walls and hedges are folded to a height (units), not scaled; gate posts stand a little above the wall. */
+export const WALL_HEIGHT = TOY.heights.wall * SCALE;
+export const HEDGE_HEIGHT = TOY.heights.hedge * SCALE;
+export const GATE_POST_SCALE = (WALL_HEIGHT * 1.2) / 2.4;

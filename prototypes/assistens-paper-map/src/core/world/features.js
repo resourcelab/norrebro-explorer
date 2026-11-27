@@ -57,7 +57,7 @@ export function prepareTile(raw, { landmarkIds, insideSite }) {
     buildings, streets, areas,
     trees: raw.trees.map(toUnits),
     props: raw.props.map(([x, z, kind]) => [...toUnits([x, z]), kind]),
-    pois: raw.pois.map(([x, z, name, category]) => ({ x: x * SCALE, z: z * SCALE, name, category })),
+    pois: raw.pois.map(([x, z, name, category, type]) => ({ x: x * SCALE, z: z * SCALE, name, category, type: type ?? null })),
   };
 }
 

@@ -6,8 +6,8 @@
  * animates his stride and turn, frames him with its camera window and sight assist, and draws.
  */
 import { createHarness } from 'papercraft/harness.js';
-import { START, TOY, WALK } from '../../config.js';
-import { PALETTE, LENS } from './settings.js';
+import { START, WALK } from '../../config.js';
+import { PALETTE, LENS, scaleOf } from './settings.js';
 import { printGround } from './world/ground.js';
 import { createPopup, printOnce } from './world/popup.js';
 import { createMakers } from './world/build.js';
@@ -35,13 +35,13 @@ export function createPapercraftStyle(game) {
     play: true, // the camera follows the walker from the first step
     drive: true, // ...but the game moves him
     lens: { highlightBoost: 0 }, // no bokeh highlights (they flicker on some GPUs)
-    view: { pitch: LENS.walk.pitch, dist: LENS.walk.dist, target: [START[0], 1.5, START[1]], follow: [0, 0] },
+    view: { pitch: LENS[game.state.zoom].pitch, dist: LENS[game.state.zoom].dist, target: [START[0], 0.6, START[1]], follow: [0, 0] },
     bounds: { ...SHEET }, // the printed ground: the walkable region and a ring of context round it
     walkArea: { ...REGION },
     heroHeight: WALK.heroHeight,
   });
   const popup = createPopup(H);
-  const camera = createCamera(H);
+  const camera = createCamera(H, game.state.zoom);
   let presenter = null;
   let makeFor = null;
   let riders = [];
@@ -60,7 +60,7 @@ export function createPapercraftStyle(game) {
 
       // the walker: a small 3D paper model; the game moves him, the harness swings his limbs by his stride
       const doll = createWalker(H);
-      const hero = popup(null, null, { node: doll, height: 3.1, x: START[0], z: START[1], sway: 0.2, scale: TOY.walker });
+      const hero = popup(null, null, { node: doll, height: 3.1, x: START[0], z: START[1], sway: 0.2, scale: scaleOf('walker') });
       H.setHero(hero, { stride: doll.userData.stride });
 
       presenter = createPresenter(H, makers);
@@ -70,7 +70,7 @@ export function createPapercraftStyle(game) {
       const looks = Array.from({ length: RIDER_LOOKS }, (_, k) => printOnce(H, cyclist(k + 3)));
       riders = game.state.riders.map((r) => {
         const { pts, mat } = looks[r.look % RIDER_LOOKS];
-        return { r, hinge: popup(pts, null, { x: r.x, z: r.z, materials: mat, scale: TOY.cyclist }) };
+        return { r, hinge: popup(pts, null, { x: r.x, z: r.z, materials: mat, scale: scaleOf('cyclist') }) };
       });
 
       if (!H.flags.TEST) startLife(H, creatures);
@@ -96,10 +96,19 @@ export function createPapercraftStyle(game) {
       H.start();
     },
 
+    credit: 'papercraft style by xikhar (MIT)',
+    hint: 'arrows / WASD walk · Shift run · Z zoom · walk up to a shop, a grave or a church · drag to look around',
+    // the generic capture hooks (tools/capture.py); the harness's own window.__papercraft has more (moods, walks)
+    capture: {
+      ready: () => Boolean(window.__papercraft?.ready),
+      step: (sec) => window.__papercraft.step(sec),
+      restart: () => window.__papercraft.restart(),
+    },
     near(changes) { presenter?.update(changes); },
     add(things) { if (presenter) presenter.add(makeFor(things)); },
     remove(ids) { presenter?.remove(ids); },
     zoom(mode, opts) { camera.set(mode, opts); },
     stats: () => presenter?.stats(),
+    heights: () => presenter?.heights(),
   };
 }

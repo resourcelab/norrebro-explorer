@@ -7,21 +7,25 @@
  * so the map view stays readable. Tiles: where a tile is loaded its outlines are drawn; everywhere else the world's
  * overview is. It pins no tiles, so it streams as you walk.
  */
-import { ZOOMS, TOY } from '../../config.js';
+import { ZOOMS } from '../../config.js';
 
 const COLOURS = {
   paper: '#f2ede1', veil: 'rgba(242,237,225,0.5)', lawn: '#cfd8ad', park: '#bfd39b', grass: '#c9d9a8', garden: '#bcd29c',
   pitch: '#a9cf92', playground: '#f0d58f', square: '#e6dfcd', schoolyard: '#e8dfc9', parking: '#ddd8cc', wood: '#a6c48b',
-  scrub: '#b3c896', flowerbed: '#e3b9c3', cemetery: '#c6d6a2', water: '#9ccbe0', road: '#ffffff', casing: '#c9c0ad',
+  scrub: '#b3c896', flowerbed: '#e3b9c3', cemetery: '#c6d6a2', forecourt: '#ddd2b8', water: '#9ccbe0', road: '#ffffff', casing: '#c9c0ad',
   footway: '#f7f1e3', path: '#eadfc4', block: '#e0c1a3', blockEdge: '#b68b6a', far: '#e8d6c3', wall: '#d9a94a', hedge: '#6e8f55',
   tree: { linden: '#9cbf5a', chestnut: '#7fa84e', maple: '#b7c25a', beech: '#8fae55', yew: '#4f7a4f', poplar: '#a6b85e' },
   grave: '#a8a49b', notable: '#6d6a64', bench: '#7b5a3c', lamp: '#4a4a46', tap: '#4b8fb8', kit: '#e0703c', rack: '#5a6470',
   brick: '#b5523a', copper: '#5f9a86', chapel: '#c9694c', shed: '#b9a58e', ink: '#2e241c', hero: '#d6452f',
+  shop: { food: '#b8432f', shop: '#2f6b62', everyday: '#2f4f7a', culture: '#6b3f6e' },
+  /** Kinds this style doesn't know are drawn as a dot in their category's colour (core/kinds.js). */
+  category: { building: '#c9a283', landmark: '#c4523a', barrier: '#d9a94a', tree: '#9cbf5a', monument: '#8c877d', prop: '#5a6470', animal: '#2f2d2e', sign: '#2e241c', place: '#d6452f' },
 };
 const EASE = 0.5; // seconds to ease between zooms
 const FOLLOW = 6; // how quickly the view catches up with the walker (1/s)
 
 export function createFlatStyle(game) {
+  let stepByHand = null; // set once the loop starts (captures)
   const canvas = document.createElement('canvas');
   canvas.className = 'flat-map';
   document.body.appendChild(canvas);
@@ -40,10 +44,9 @@ export function createFlatStyle(game) {
   resize();
 
   const near = new Set();
-  const view = { x: game.state.hero.x, z: game.state.hero.z, across: ZOOMS.walk.across, from: ZOOMS.walk.across, to: ZOOMS.walk.across, t: 1 };
+  const view = { x: game.state.hero.x, z: game.state.hero.z, across: ZOOMS[game.state.zoom].across, from: ZOOMS[game.state.zoom].across, to: ZOOMS[game.state.zoom].across, t: 1 };
   const map = game.map;
   const REGION = map.region;
-  const site = map.sites[0].ground; // Assistens: its lawn and paths
   const boxOf = (pts) => { let x0 = Infinity; let z0 = Infinity; let x1 = -Infinity; let z1 = -Infinity; for (const [x, z] of pts) { x0 = Math.min(x0, x); z0 = Math.min(z0, z); x1 = Math.max(x1, x); z1 = Math.max(z1, z); } return [x0, z0, x1, z1]; };
   const withBox = (list, ptsOf) => list.map((f) => ({ f, box: boxOf(ptsOf(f)) }));
   const far = {
@@ -51,7 +54,11 @@ export function createFlatStyle(game) {
     streets: withBox([...map.overview.streets].sort((a, b) => a.width - b.width), (s) => s.pts),
     blocks: withBox(map.overview.buildings, (p) => p),
   };
-  const paths = withBox(site.paths, (p) => p.pts);
+  // sites (Assistens): their ground layers, drawn like any other areas and paths
+  const site = {
+    areas: withBox(map.sites.flatMap((s) => s.ground.areas), (a) => a.pts),
+    paths: withBox(map.sites.flatMap((s) => s.ground.paths), (p) => p.pts),
+  };
   let layers = null;
   let labels = [];
   let loadedRects = [];
@@ -115,16 +122,15 @@ export function createFlatStyle(game) {
     g.restore();
 
     drawGround(layers);
-    g.fillStyle = COLOURS.lawn;
-    trace(site.outline);
-    g.fill();
-    for (const { f, box } of paths) {
+    for (const { f, box } of site.areas.filter((a) => a.f.kind === 'cemetery')) if (visible(box)) { g.fillStyle = COLOURS.lawn; trace(f.pts); g.fill(); }
+    for (const { f, box } of site.paths) {
       if (!visible(box)) continue;
-      g.strokeStyle = COLOURS.path;
+      g.strokeStyle = f.surface === 'asphalt' ? COLOURS.footway : COLOURS.path;
       g.lineWidth = Math.max(1, f.half * 2 * ppu);
       trace(f.pts, false);
       g.stroke();
     }
+    for (const { f, box } of site.areas.filter((a) => a.f.kind !== 'cemetery')) if (visible(box)) { g.fillStyle = COLOURS[f.kind] ?? COLOURS.square; trace(f.pts); g.fill(); }
     for (const { f, box } of layers.blocks) {
       if (!visible(box) || f.landmark) continue;
       g.fillStyle = 'rgba(80,50,30,0.18)'; // a soft shadow, down and right
@@ -164,7 +170,7 @@ export function createFlatStyle(game) {
         g.stroke();
         break;
       case 'tree':
-        dot(t.x, t.z, 1.9 * (t.size / TOY.tree) * 0.9, COLOURS.tree[t.species] ?? COLOURS.tree.linden);
+        dot(t.x, t.z, 1.7 * t.size, COLOURS.tree[t.species] ?? COLOURS.tree.linden);
         dot(t.x - 0.4, t.z - 0.4, 0.8, 'rgba(255,255,255,0.18)');
         break;
       case 'grave':
@@ -210,7 +216,19 @@ export function createFlatStyle(game) {
       case 'fingerpost':
         label(t.arms.map((a) => `${a.dx < 0 ? '← ' : ''}${a.name} ${a.metres} m${a.dx >= 0 ? ' →' : ''}`).join('   '), t.x, t.z, 11, true, '#f1e4c4');
         break;
-      default:
+      case 'shopfront': {
+        // a coloured strip along the facade, and the name when you are close
+        g.strokeStyle = COLOURS.shop[t.group] ?? COLOURS.shop.shop;
+        g.lineWidth = Math.max(2, 0.35 * ppu);
+        g.lineCap = 'butt';
+        trace([t.a, t.b], false);
+        g.stroke();
+        g.lineCap = 'round';
+        if (ppu > 30) label(t.name, t.x + Math.sin(t.yaw) * 1.1, t.z + Math.cos(t.yaw) * 1.1, 10, false, '#fffaf0');
+        break;
+      }
+      default: // a kind this style doesn't know yet: a dot in its category's colour
+        dot(t.x, t.z, 0.4, COLOURS.category[t.category] ?? COLOURS.ink);
         break;
     }
   }
@@ -256,12 +274,12 @@ export function createFlatStyle(game) {
 
   function drawRider(r) {
     if (sx(r.x) < -20 || sx(r.x) > W + 20 || sz(r.z) < -20 || sz(r.z) > Hh + 20) return;
-    dot(r.x, r.z, 0.45, '#2c3a5a');
+    dot(r.x, r.z, 0.3, '#2c3a5a');
   }
 
   function drawHero() {
     const h = game.state.hero;
-    const R = Math.max(7, 0.9 * ppu);
+    const R = Math.max(7, 0.45 * ppu); // about the walker's own size (2 × life, config.js TOY): he fits under a shop sign
     g.save();
     g.translate(sx(h.x), sz(h.z));
     g.fillStyle = 'rgba(0,0,0,0.2)';
@@ -311,8 +329,11 @@ export function createFlatStyle(game) {
       };
       requestAnimationFrame(frame);
       // for captures: step the game by hand and draw (no real-time loop needed)
-      window.__flat = { step(sec, fps = 60) { for (let i = 0; i < Math.round(sec * fps); i++) step(1 / fps); const h = game.state.hero; view.x = h.x; view.z = h.z; view.across = view.to; view.t = 1; ppu = W / view.across; draw(); } };
+      stepByHand = (sec, fps = 60) => { for (let i = 0; i < Math.round(sec * fps); i++) step(1 / fps); const h = game.state.hero; view.x = h.x; view.z = h.z; view.across = view.to; view.t = 1; ppu = W / view.across; draw(); };
     },
+    credit: '',
+    hint: 'arrows / WASD walk · Shift run · Z zoom · walk up to a shop, a grave or a church',
+    capture: { ready: () => stepByHand !== null, step: (sec) => stepByHand(sec), restart: () => game.reset() },
     add() {}, // things are read from game.things as they are drawn
     remove(ids) { for (const id of ids) near.delete(id); },
     near({ came, went }) {

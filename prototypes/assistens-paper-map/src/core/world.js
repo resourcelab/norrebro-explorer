@@ -3,10 +3,11 @@
  * Things are the contract between the game core and the styles: a style is told when things arrive and leave and
  * decides how each kind looks (a paper card, a pixel sprite, a flat icon). Every thing is plain data:
  *
- *   { id, kind, x, z, tile, solid?, always?, ...fields of its kind }
+ *   { id, kind, category, x, z, tile, solid?, always?, ...fields of its kind }
  *
  *   id      stable string ('tree-6_7-12'), the same on every load, used to say it has come near or gone far
  *   x, z    where it stands (world units; x east, z south). Long things (wall runs) also give a and b.
+ *   category  what sort of thing it is (core/kinds.js): a style that doesn't know the kind draws it by this
  *   tile    the tile it belongs to (the one its position falls in), or 'world' for things that are always there
  *   solid   radius (units) the walker cannot enter, or absent. core/colliders.js builds collision from it.
  *   always  true for landmarks: always "near", so a style keeps them standing to steer by
@@ -14,34 +15,37 @@
  * Kinds and their fields:
  *   chapel        pts (footprint), yaw                   shed         pts
  *   wall          a, b, wall: 'wall' | 'hedge'           gate-post    -
- *   tree          species, size (scale), seed            grave        variant, size
+ *   tree          species, size, seed                    grave        variant, size
+ *                 (size: this one's height against the usual for its kind, TOY.heights in config.js: 0.85-1.27)
  *   notable-grave name, index, tall                       bench, lamp, tap
  *   critter       species: 'crow' | 'squirrel'           block        pts, levels, buildingId
  *   playground    equipment: swings | slide | climber | seesaw
  *   bike-rack     -                                      corner-sign  names
  *   fingerpost    arms: [{ name, dx, metres }]          flag         name, color
  *   church        name, pts, tower: [x, z]
+ *   shopfront     name, place (OSM type: bakery, cafe...), group (food | shop | everyday | culture), label (the type
+ *                 in words), a, b (its two ends on the facade), yaw (the way it faces), height (the shop floor),
+ *                 footprint (the block's outline), buildingId
  * Cyclists move, so they are not things: core/traffic.js keeps them in the game state.
  *
  * Where things come from:
- *   describeTile     a tile's own things (blocks, street trees, playground kit, racks, benches, corner signs), planned
+ *   describeTile     a tile's own things (blocks, shopfronts, street trees, playground kit, racks, benches, corner
+ *                    signs), planned
  *                    from that tile alone with its own random stream
  *   describeSite     a site's things (Assistens: the chapel, walls, graves...), planned once, then handed out to the
  *                    tiles they stand on
  *   describeLandmarks  churches, flags and fingerposts: always there, whatever is loaded
  *
- * Sizes are TOY scale (config.js): what a style draws should honour them, so every style reads the same way.
+ * Sizes: a style draws each kind at its TOY.heights (config.js), times a thing's own `size` where it has one, so every
+ * style keeps the same proportions.
  */
-import { TOY } from '../config.js';
 import { SOLID } from './solid.js';
+import { KINDS, KIND_CATEGORY } from './kinds.js';
 import { rng, seedOf } from './random.js';
 import { planStreetTrees, planPlaygrounds, planPlaygroundKit, planStreetFurniture, planCornerSigns } from './plan/neighbourhood.js';
+import { planShopfronts } from './plan/shops.js';
 
-/** Every kind of thing; a style should know how to draw each (tests/core.test.mjs checks the list stays honest). */
-export const KINDS = [
-  'chapel', 'shed', 'wall', 'gate-post', 'tree', 'grave', 'notable-grave', 'bench', 'lamp', 'tap', 'critter', 'block',
-  'playground', 'bike-rack', 'church', 'flag', 'corner-sign', 'fingerpost',
-];
+export { KINDS };
 
 /** A thing maker: add(kind, fields) -> thing, with ids `${kind}-${prefix}-${n}` (or `${kind}-${n}` with no prefix). */
 export function thingMaker(prefix, tile) {
@@ -49,7 +53,8 @@ export function thingMaker(prefix, tile) {
   const counters = {};
   const add = (kind, fields) => {
     counters[kind] = (counters[kind] ?? 0) + 1;
-    const thing = { id: prefix ? `${kind}-${prefix}-${counters[kind]}` : `${kind}-${counters[kind]}`, kind, tile, ...fields };
+    if (!KIND_CATEGORY[kind]) throw new Error(`world: unknown kind "${kind}" (add it to core/kinds.js)`);
+    const thing = { id: prefix ? `${kind}-${prefix}-${counters[kind]}` : `${kind}-${counters[kind]}`, kind, category: KIND_CATEGORY[kind], tile, ...fields };
     things.push(thing);
     return thing;
   };
@@ -60,7 +65,7 @@ export function thingMaker(prefix, tile) {
  * A tile's plan and things. Seeded by the tile's key: the same tile always plans the same.
  * @param tile a loaded tile (core/world/store.js)
  * @param inRegion (x, z) -> inside the play area
- * @returns {{ plan: { streetTrees, playgrounds, playgroundKit, racks, benches, cornerSigns }, things }}
+ * @returns {{ plan: { streetTrees, playgrounds, playgroundKit, racks, benches, cornerSigns, shopfronts }, things }}
  */
 export function describeTile(tile, inRegion) {
   const rnd = rng(seedOf(tile.key));
@@ -71,6 +76,7 @@ export function describeTile(tile, inRegion) {
   const playgroundKit = planPlaygroundKit(t, playgrounds);
   const { racks, benches } = planStreetFurniture(t);
   const cornerSigns = planCornerSigns(t);
+  const shopfronts = planShopfronts(t);
 
   const { things, add } = thingMaker(tile.key, tile.key);
   // a block belongs to the tile its middle is in (every tile it touches lists it)
@@ -82,14 +88,15 @@ export function describeTile(tile, inRegion) {
     add('block', { x, z, pts: b.pts, levels: b.levels, buildingId: b.id });
   }
   for (const s of streetTrees) {
-    const size = TOY.tree * between(0.85, 1.05);
+    const size = between(0.85, 1.05);
     add('tree', { x: s.x, z: s.z, species: s.kind, size, seed: Math.floor(rnd() * 1e6), solid: SOLID.tree, area: 'street' });
   }
   for (const e of playgroundKit) add('playground', { x: e.x, z: e.z, equipment: e.kind, solid: SOLID.playground });
   for (const [x, z] of racks) add('bike-rack', { x, z, solid: SOLID.rack });
   for (const [x, z] of benches) add('bench', { x, z, solid: SOLID.bench });
   for (const s of cornerSigns) add('corner-sign', { x: s.x, z: s.z, names: s.names, solid: SOLID.sign });
-  return { plan: { streetTrees, playgrounds, playgroundKit, racks, benches, cornerSigns }, things };
+  for (const f of shopfronts) add('shopfront', f); // on the block's wall: the block is the solid part
+  return { plan: { streetTrees, playgrounds, playgroundKit, racks, benches, cornerSigns, shopfronts }, things };
 }
 
 /**

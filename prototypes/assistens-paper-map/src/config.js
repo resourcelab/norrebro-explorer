@@ -10,31 +10,47 @@ export const DEFAULT_STYLE = 'papercraft';
 export const SCALE = 0.2;
 
 /*
- * Toy scale: how big things are drawn, so a child can read the map and find the way.
+ * Toy scale: how big things are drawn, so a child can read the map, find the way, and walk into the bakery.
  *   - the ground plan is TRUE: every street, block and path where it really is, at 1 unit = 5 m, so what you learn here
  *     works outside
- *   - buildings are TRUE height (3 m storeys), streets are drawn a little WIDER than life so they read as the way through
+ *   - what is BUILT is true height: 3 m storeys over a 5 m shop floor (a tall Nørrebro one), sheds, walls, trees as
+ *     tall as real ones.
+ *     Streets are drawn a little WIDER than life so they read as the way through
  *   - landmarks are a bit TALLER than life, so you can see them from far and steer by them
- *   - people, trees and street furniture are drawn larger than life (a real person would be a speck at this scale),
- *     but always smaller than the buildings round them
+ *   - PEOPLE and what people use (benches, bike racks, signs, play kit, graves) are 2 × life: big enough to see from
+ *     the street zoom, small enough that the walker (3.5 m) stands under the shop signs, between the doors
+ *
+ * TOY.person is that one factor. Each style sizes its pieces from these numbers (`heights`, in metres as DRAWN), so
+ * every style keeps the same proportions; a style may tune its own art to hit them (papercraft: the scale table in
+ * styles/papercraft/settings.js, measured with window.__style.heights()).
  */
+const PERSON = 2;
 export const TOY = {
+  person: PERSON, // people and what they use: drawn size / life size
   storey: 0.6, // units per storey (3 m)
-  groundFloor: 0.85, // units for the shop floor (4.25 m)
+  groundFloor: 1.0, // units for the shop floor (5 m): the walker (3.5 m) stands under the shop sign
   streetWiden: 1.4, // drawn street width / mapped width
   landmark: 1.3, // landmark height / true height
-  walker: 0.85, // the walker's scale (about 2.6 units, ~13 m: two thirds of a five-storey block, easy to spot)
-  tree: 0.62, // trees: ~4-5 units (20-24 m), the height of a big linden
-  grave: 1.0, // grave plots
-  notable: 1.0, // notable graves
-  prop: 0.7, // benches, lamps, taps, bike racks
-  critter: 0.7, // crows and squirrels
-  playground: 0.85, // swings, slide, climbing dome, seesaw
-  cyclist: 0.85,
-  shed: 0.7, // sheds and service buildings in the cemetery
-  chapel: 0.8,
-  wallHeight: 1.0, // the cemetery wall (5 m: a little taller than its real ~3 m, so it reads)
-  hedgeHeight: 0.5,
+  /** Drawn heights in metres: built things at true height, people-sized things at PERSON × life. */
+  heights: {
+    walker: 1.75 * PERSON, // 3.5 m
+    cyclist: 1.9 * PERSON,
+    bench: 0.9 * PERSON,
+    bikeRack: 0.9 * PERSON,
+    tap: 1.0 * PERSON,
+    sign: 2.6 * PERSON, // a corner sign: the name plate just above the walker's head
+    fingerpost: 2.8 * PERSON,
+    grave: 1.1 * PERSON,
+    notableGrave: 1.6 * PERSON, // a little taller, so you spot them
+    playground: 2.4 * PERSON, // swings and climbing dome
+    critter: 0.45 * PERSON * 1.6, // birds and squirrels a bit bigger again, or they vanish
+    lamp: 5.5, // a street lamp: built, so true height
+    tree: 18, // a grown linden (each tree varies round this)
+    shed: 4,
+    chapel: 14,
+    wall: 3.5, // the cemetery wall (real ~3 m)
+    hedge: 2,
+  },
 };
 
 /**
@@ -42,16 +58,19 @@ export const TOY = {
  * accel: how quickly he gets up to speed (units/s²); turn: how quickly he turns to face the way he walks (1/s);
  * radius: how close he comes to a tree or a bench (units).
  */
-export const WALK = { speed: 2.5, runFactor: 2.2, accel: 40, turn: 13, radius: 0.25, heroHeight: 2.6 };
+export const WALK = { speed: 2.5, runFactor: 2.2, accel: 40, turn: 13, radius: 0.18, heroHeight: TOY.heights.walker * SCALE };
 
 /**
- * Two zooms (Z, the button or a click on the minimap switches): close for walking, and a map view. `across` is about
- * how much of the world (units) the screen shows across; each style turns that into its own camera.
+ * Three zooms (Z, the button or a click on the minimap steps through them, in this order): the street, close enough to
+ * read the shop signs; the neighbourhood, a few blocks round you; and a map view. `across` is about how much of the
+ * world (units) the screen shows across; each style turns that into its own camera. The game starts in the first.
  */
 export const ZOOMS = {
-  walk: { across: 37 }, // ~185 m
-  map: { across: 95 }, // ~475 m
+  street: { across: 14, label: 'Gade · Street' }, // ~70 m: one side of a block, the shop signs readable
+  neighbourhood: { across: 37, label: 'Kvarter · Blocks' }, // ~185 m
+  map: { across: 95, label: 'Kort · Map' }, // ~475 m
 };
+export const ZOOM_ORDER = Object.keys(ZOOMS);
 
 /**
  * Near and far: things within `radius` units (60 = 300 m) of the walker are near, further ones far (a thing that is

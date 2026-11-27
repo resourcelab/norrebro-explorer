@@ -18,6 +18,8 @@
  *   world/manifest.json      origin, bbox, tile size, grid, margin, the tile list, source and licence
  *   world/overview.json      { bounds, streets, areas, buildings, landmarks }
  *   world/tiles/<i>_<j>.json { i, j, buildings, streets, areas, trees, props, pois }
+ *                            pois: [x, z, name, category, type] (type: bakery, cafe, hairdresser... from the OSM tags),
+ *                            with the margin like the outlines; trees and props only in the tile they stand in
  *
  * Map data © OpenStreetMap contributors, ODbL 1.0.
  */
@@ -108,7 +110,9 @@ for (const key of manifest.tiles) {
   for (const p of tile.pois) {
     if (seen.has('poi:' + p.id) || !p.name) continue;
     seen.add('poi:' + p.id);
-    all.pois.push([Math.round(p.x), Math.round(p.z), p.name, p.category]);
+    const t = p.tags ?? {};
+    const type = t.shop ?? t.amenity ?? t.craft ?? t.tourism ?? t.leisure ?? t.historic ?? null;
+    all.pois.push([Math.round(p.x), Math.round(p.z), p.name, p.category, type]);
   }
 }
 
@@ -135,6 +139,7 @@ for (let i = 0; i < NX; i++) {
     const [x0, z0, x1, z1] = [i * T - MARGIN, j * T - MARGIN, (i + 1) * T + MARGIN, (j + 1) * T + MARGIN];
     const touches = (f) => f.box[2] >= x0 && f.box[0] <= x1 && f.box[3] >= z0 && f.box[1] <= z1;
     const owns = ([x, z]) => x >= i * T && x < (i + 1) * T && z >= j * T && z < (j + 1) * T; // points: in one tile only
+    const near = ([x, z]) => x >= x0 && x <= x1 && z >= z0 && z <= z1; // within the margin
     const tile = {
       i, j,
       buildings: buildings.filter(touches).map(strip),
@@ -142,7 +147,7 @@ for (let i = 0; i < NX; i++) {
       areas: areas.filter(touches).map(strip),
       trees: [...all.trees.values()].filter(owns),
       props: all.props.filter(owns),
-      pois: all.pois.filter(owns),
+      pois: all.pois.filter(near), // with the margin: shopfronts on one block are planned together (core/plan/shops.js)
     };
     if (!tile.buildings.length && !tile.streets.length && !tile.areas.length && !tile.trees.length) continue;
     const key = `${i}_${j}`;

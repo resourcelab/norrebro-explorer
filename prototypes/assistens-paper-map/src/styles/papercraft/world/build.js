@@ -5,7 +5,7 @@
  */
 import * as P2 from 'papercraft/lib/paperkit-2d.js';
 import { TOY } from '../../../config.js';
-import { PALETTE as C } from '../settings.js';
+import { PALETTE as C, scaleOf, WALL_HEIGHT, HEDGE_HEIGHT, GATE_POST_SCALE } from '../settings.js';
 import { createTreePrints, VARIANTS_PER_KIND } from '../pieces/trees.js';
 import { createPlotPrints, notableGrave } from '../pieces/graves.js';
 import { wallPaint, lidPaint, hedgePaint, placeRun, gatePost } from '../pieces/walls.js';
@@ -14,14 +14,16 @@ import { createPropPrints, shed } from '../pieces/props.js';
 import { crow, squirrel } from '../pieces/critters.js';
 import { apartmentBlock } from '../pieces/buildings.js';
 import { PLAYGROUND } from '../pieces/playground.js';
+import { DRAWS } from '../kinds.js';
 import { bikeRack } from '../pieces/street.js';
 import { church, flag, fingerpost } from '../pieces/landmarks.js';
 import { cornerSign } from '../pieces/signs.js';
+import { shopfront, onFoldedFacade } from '../pieces/shopfront.js';
 import { printOnce } from './popup.js';
 
-const WALL = { h: TOY.wallHeight, t: 0.5 };
-const HEDGE = { h: TOY.hedgeHeight, t: 0.6 };
-const GATE_POST_SCALE = TOY.wallHeight / 1.5; // the posts stand a little above the wall
+const WALL = { h: WALL_HEIGHT, t: 0.5 };
+const HEDGE = { h: HEDGE_HEIGHT, t: 0.6 };
+const S = Object.fromEntries(['bench', 'bikeRack', 'tap', 'lamp', 'sign', 'fingerpost', 'grave', 'notableGrave', 'playground', 'critter', 'tree', 'shed', 'chapel'].map((k) => [k, scaleOf(k)]));
 /** Kinds that are constructions (folds): hidden at once when far, not folded flat. */
 const CONSTRUCTIONS = new Set(['chapel', 'shed', 'wall', 'gate-post', 'block', 'church']);
 
@@ -39,45 +41,58 @@ export function createMakers(H, popup, { onCritter }) {
   const wallLid = lidPaint(P2.shade(C.wall, -0.08));
 
   const piece = {
-    chapel: (t) => popup(null, null, { node: chapelFold(H), height: 6.2, x: t.x, z: t.z, yaw: t.yaw, level: true, solid: 3.2, scale: TOY.chapel }),
-    shed: (t) => shed(H, popup, t.pts, TOY.shed),
+    chapel: (t) => popup(null, null, { node: chapelFold(H), height: 6.2, x: t.x, z: t.z, yaw: t.yaw, level: true, solid: 3.2, scale: S.chapel }),
+    shed: (t) => shed(H, popup, t.pts, S.shed),
     wall: (t) => (t.wall === 'hedge'
       ? placeRun(H, popup, [t.a, t.b], { h: HEDGE.h, t: HEDGE.t, wall: hedgePaint, lid: hedgePaint })
       : placeRun(H, popup, [t.a, t.b], { h: WALL.h, t: WALL.t, wall: wallPaint, lid: wallLid })),
     'gate-post': (t) => gatePost(H, popup, t.x, t.z, GATE_POST_SCALE),
     tree: (t) => {
       const v = treeVariant(t.species, t.seed % VARIANTS_PER_KIND);
-      return popup(v.pts, null, { x: t.x, z: t.z, cross: true, materials: v.mat, sway: t.species === 'yew' ? 0.2 : 0.5, scale: t.size, solid: 0.35 });
+      return popup(v.pts, null, { x: t.x, z: t.z, cross: true, materials: v.mat, sway: t.species === 'yew' ? 0.2 : 0.5, scale: S.tree * t.size, solid: 0.35 });
     },
     grave: (t) => {
       const v = plotPrints[t.variant % plotPrints.length];
-      return popup(v.pts, null, { x: t.x, z: t.z, materials: v.mat, scale: t.size, solid: 0.45 });
+      return popup(v.pts, null, { x: t.x, z: t.z, materials: v.mat, scale: S.grave * t.size, solid: 0.45 });
     },
-    'notable-grave': (t) => popup(...notableGrave(t.index, t.tall), { x: t.x, z: t.z, scale: TOY.notable, solid: 0.7 }),
-    bench: (t) => popup(props.bench.pts, null, { x: t.x, z: t.z, materials: props.bench.mat, scale: TOY.prop, solid: 0.5 }),
-    lamp: (t) => popup(props.lamp.pts, null, { x: t.x, z: t.z, materials: props.lamp.mat, scale: TOY.prop, solid: 0.2 }),
-    tap: (t) => popup(...props.tap, { x: t.x, z: t.z, scale: TOY.prop, solid: 0.3 }),
+    'notable-grave': (t) => popup(...notableGrave(t.index, t.tall), { x: t.x, z: t.z, scale: S.notableGrave, solid: 0.7 }),
+    bench: (t) => popup(props.bench.pts, null, { x: t.x, z: t.z, materials: props.bench.mat, scale: S.bench, solid: 0.5 }),
+    lamp: (t) => popup(props.lamp.pts, null, { x: t.x, z: t.z, materials: props.lamp.mat, scale: S.lamp, solid: 0.2 }),
+    tap: (t) => popup(...props.tap, { x: t.x, z: t.z, scale: S.tap, solid: 0.3 }),
     critter: (t) => {
       const squirrelling = t.species === 'squirrel';
-      const h = popup(...(squirrelling ? squirrel() : crow()), { x: t.x, z: t.z, scale: TOY.critter * (squirrelling ? 1.1 : 1) });
+      const h = popup(...(squirrelling ? squirrel() : crow()), { x: t.x, z: t.z, scale: S.critter * (squirrelling ? 1.1 : 1) });
       onCritter(h, squirrelling ? 'shy' : 'peck');
       return h;
     },
     block: (t) => apartmentBlock(H, popup, { id: t.buildingId, pts: t.pts, levels: t.levels }),
-    playground: (t) => popup(kit[t.equipment].pts, null, { x: t.x, z: t.z, materials: kit[t.equipment].mat, scale: TOY.playground, solid: 1.0 }),
-    'bike-rack': (t) => popup(rack.pts, null, { x: t.x, z: t.z, materials: rack.mat, scale: TOY.prop, solid: 0.6 }),
+    playground: (t) => popup(kit[t.equipment].pts, null, { x: t.x, z: t.z, materials: kit[t.equipment].mat, scale: S.playground, solid: 1.0 }),
+    'bike-rack': (t) => popup(rack.pts, null, { x: t.x, z: t.z, materials: rack.mat, scale: S.bikeRack, solid: 0.6 }),
     church: (t) => church(H, popup, { id: t.landmarkId, pts: t.pts, tower: t.tower, name: t.name }),
     flag: (t) => popup(...flag(t.color), { x: t.x, z: t.z, scale: TOY.landmark * 0.8, yaw: 0.05, sway: 0.15 }),
-    'corner-sign': (t) => popup(...cornerSign(t.names), { x: t.x, z: t.z, yaw: 0, solid: 0.15 }),
-    fingerpost: (t) => popup(...fingerpost(t.arms.map((a) => ({ label: `${a.name} ${a.metres} m`, dx: a.dx }))), { x: t.x, z: t.z, yaw: 0, solid: 0.2 }),
+    'corner-sign': (t) => popup(...cornerSign(t.names), { x: t.x, z: t.z, yaw: 0, scale: S.sign, solid: 0.15 }),
+    shopfront: (t) => {
+      const at = onFoldedFacade(t);
+      return popup(...shopfront(t), { x: at.x, z: at.z, yaw: at.yaw });
+    },
+    fingerpost: (t) => popup(...fingerpost(t.arms.map((a) => ({ label: `${a.name} ${a.metres} m`, dx: a.dx }))), { x: t.x, z: t.z, yaw: 0, scale: S.fingerpost, solid: 0.2 }),
   };
+
+  // a kind with no piece of its own is drawn by its category (core/kinds.js): a block if it has a footprint, a tree,
+  // or a small coloured flag on a post for everything else
+  const MARKER = { landmark: '#c4523a', barrier: '#d9a94a', monument: '#8c877d', prop: '#5a6470', animal: '#2f2d2e', sign: '#2e241c', place: '#d6452f', building: '#c9a283' };
+  const byCategory = (t) => {
+    if (t.category === 'building' && t.pts) return piece.block({ ...t, buildingId: t.id });
+    if (t.category === 'tree') return piece.tree({ species: 'linden', seed: 1, size: 1, ...t });
+    return popup(...flag(MARKER[t.category] ?? '#2e241c'), { x: t.x, z: t.z, scale: S.sign * 0.5, yaw: 0.05 });
+  };
+  for (const k of Object.keys(piece)) if (!DRAWS.has(k)) console.warn(`papercraft: piece "${k}" is missing from kinds.js`);
 
   return (things) => {
     const makers = new Map();
     for (const t of things) {
-      const make = piece[t.kind];
-      if (!make) { console.warn(`papercraft: no piece for kind "${t.kind}"`); continue; }
-      makers.set(t.id, { x: t.x, z: t.z, node: CONSTRUCTIONS.has(t.kind), eager: t.kind === 'critter', make: () => make(t) });
+      const make = piece[t.kind] ?? byCategory;
+      makers.set(t.id, { kind: t.kind, x: t.x, z: t.z, node: CONSTRUCTIONS.has(t.kind), eager: t.kind === 'critter', make: () => make(t) });
     }
     return makers;
   };

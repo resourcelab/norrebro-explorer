@@ -7,6 +7,7 @@
  *     small time budget, so the load stays quick and walking into a new street never stutters
  *   - things arrive and leave with their tiles (add, remove); a removed thing's pieces leave the scene
  */
+import { Box3 } from 'three';
 import { BUILD } from '../settings.js';
 
 const UP = 1;
@@ -128,6 +129,27 @@ export function createPresenter(H, makers, { buildPerStep = BUILD.buildPerStep, 
       H.hinges.length = 0;
       H.hinges.push(...kept);
       for (let i = queue.length - 1; i >= 0; i--) if (!items.has(queue[i].id)) queue.splice(i, 1);
+    },
+    /**
+     * How tall the built pieces stand, by kind, in world units: { kind: { n, min, max } }. For tuning toy scale
+     * against the buildings (window.__style.heights() in the console, or a capture). Measures risen pieces only.
+     */
+    heights() {
+      const out = {};
+      const box = new Box3();
+      for (const it of items.values()) {
+        if (!it.hinges || it.state !== UP) continue;
+        for (const h of it.hinges) {
+          box.setFromObject(h.group);
+          if (box.isEmpty()) continue;
+          const tall = box.max.y - box.min.y;
+          const o = (out[it.kind] ??= { n: 0, min: Infinity, max: 0 });
+          o.n++;
+          o.min = Math.min(o.min, tall);
+          o.max = Math.max(o.max, tall);
+        }
+      }
+      return out;
     },
     /** How many pieces exist, are built, and stand (for checks). */
     stats() {

@@ -2,7 +2,6 @@
  * Assistens Kirkegård as things: the chapel, sheds, wall runs and gate posts, hedges, trees, grave plots, the notable
  * graves, benches, lamps, taps and a few crows and squirrels. See core/world.js for what a thing is.
  */
-import { TOY } from '../../../config.js';
 import { ASSISTENS as OSM } from '../../../data/sites/assistens.js';
 import { toUnits } from '../../geo.js';
 import { segmentDistance, splitRuns } from '../../map/math.js';
@@ -38,11 +37,11 @@ export function describeAssistens(plan, rnd, add) {
     for (const [a, b] of splitRuns(h, { maxLen: HEDGE_RUN })) add('wall', { wall: 'hedge', a, b, x: (a[0] + b[0]) / 2, z: (a[1] + b[1]) / 2 });
   }
   for (const t of plan.trees) {
-    const size = TOY.tree * between(0.88, 1.1);
+    const size = between(0.88, 1.1);
     add('tree', { x: t.x, z: t.z, species: t.kind, size, seed: Math.floor(rnd() * 1e6), solid: SOLID.tree, area: 'cemetery' });
   }
   for (const p of plan.plots) {
-    const size = TOY.grave * (1 + (p.variant % 7) * 0.045);
+    const size = 1 + (p.variant % 7) * 0.045;
     add('grave', { x: p.x, z: p.z, variant: p.variant, size, solid: SOLID.grave * size });
   }
   plan.notable.forEach((n, index) => add('notable-grave', { x: n.x, z: n.z, name: n.name, index, tall: TALL_GRAVES.test(n.name), solid: SOLID.notable }));

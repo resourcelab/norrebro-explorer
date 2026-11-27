@@ -27,6 +27,25 @@ const loader = window.__WORLD__ ? inlineLoader(window.__WORLD__) : fetchLoader(w
 const game = await createGame({ loader });
 const style = await game.attach(STYLES[chooseStyle()].create(game));
 
+// the page shell: the style's credit and controls hint
+const credit = document.getElementById('credit');
+const hint = document.getElementById('hint'); // a style may take the hint over (the papercraft harness fades it out)
+if (credit && style.credit) credit.textContent += ` · ${style.credit}`;
+if (hint && style.hint) hint.textContent = style.hint;
+
+// review captures (tools/capture.py), the same for every style
+window.__capture = {
+  get ready() { return style.capture?.ready() ?? false; },
+  style: style.name,
+  step: (sec) => style.capture.step(sec),
+  restart: () => style.capture.restart(),
+  place: (x, z) => game.place(x, z),
+  goTo: (x, z) => game.goTo(x, z),
+  zoom: (mode) => game.toggleZoom(mode, { instant: true }),
+  hero: () => ({ ...game.state.hero }),
+  near: () => game.things.filter((t) => Math.hypot(t.x - game.state.hero.x, t.z - game.state.hero.z) < 20).length,
+};
+
 attachPlaceLabels(game);
 attachStreetSign(game);
 attachMinimap(game);

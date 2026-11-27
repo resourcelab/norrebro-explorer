@@ -1,6 +1,7 @@
 /**
- * Ground layer: the cemetery. A torn lawn sheet with watercolour washes; inside it, plot beds under every grave and
- * fallen leaves under the trees and in drifts; then the gravel and asphalt paths with grit; then the chapel forecourt.
+ * Ground layer: a site (core/sites/), from its plain ground layers. Each area a torn sheet (a lawn gets watercolour
+ * washes, and inside it plot beds under every grave and fallen leaves under the trees, when the site's plan has them);
+ * then the gravel and asphalt paths with grit. Works for any site: nothing here knows it is Assistens.
  * See world/ground.js for the drawing context `k`.
  */
 import * as P2 from 'papercraft/lib/paperkit-2d.js';
@@ -10,31 +11,34 @@ import { besideSegment } from '../../../core/map/math.js';
 const LEAF_COLOURS = ['#dcae3c', '#c9772f', '#b5612f', '#e2bd5a', '#a8562c'];
 const LEAVES_PER_TREE = 70;
 const LAWN_DRIFT_MARKS = 26000;
-const FORECOURT = '#ddd2b8';
+/** Fill for each kind of site area; lawns (cemetery, park) also get washes, plot beds and leaves. */
+const AREA_FILL = { cemetery: C.lawn, park: C.lawn, forecourt: '#ddd2b8' };
+const LAWNS = new Set(['cemetery', 'park']);
 
-/** @param site a site from game.map.sites (its ground: outline, paths, chapel); @param plan its plan (plots, trees) */
-export function printCemeteryGround(k, site, plan) {
-  const { outline: OUTLINE, paths: PATHS, chapel: CHAPEL, chapelCentre: CHAPEL_CENTRE } = site.ground;
+/** @param site a site from game.map.sites (its ground layers); @param plan its plan (plots and trees, if it has them) */
+export function printSiteGround(k, site, plan = {}) {
+  const { areas, paths } = site.ground;
   const leaf = leafStamp(k);
   const { g, X, Z, torn, washes } = k;
 
-  // the lawn, and everything clipped to it
-  torn(OUTLINE, C.lawn);
-  g.save();
-  g.beginPath();
-  OUTLINE.forEach(([x, z], i) => (i ? g.lineTo(X(x), Z(z)) : g.moveTo(X(x), Z(z))));
-  g.closePath();
-  g.clip();
-  washes([C.wash, C.wash, C.washB, C.washB, '#a9a77d']);
-  printPlotBeds(k, plan.plots);
-  printLeaves(k, plan.trees, leaf);
-  g.restore();
+  for (const area of areas.filter((a) => LAWNS.has(a.kind))) {
+    // the lawn, and everything clipped to it
+    torn(area.pts, AREA_FILL[area.kind]);
+    g.save();
+    g.beginPath();
+    area.pts.forEach(([x, z], i) => (i ? g.lineTo(X(x), Z(z)) : g.moveTo(X(x), Z(z))));
+    g.closePath();
+    g.clip();
+    washes([C.wash, C.wash, C.washB, C.washB, '#a9a77d']);
+    if (plan.plots) printPlotBeds(k, plan.plots);
+    if (plan.trees) printLeaves(k, plan.trees, leaf);
+    g.restore();
+  }
 
-  printPaths(k, PATHS, leaf);
+  printPaths(k, paths, leaf);
 
-  // the chapel forecourt: a cobbled apron a third larger than the chapel
-  const [cx, cz] = CHAPEL_CENTRE;
-  torn(CHAPEL.map(([x, z]) => [cx + (x - cx) * 1.35, cz + (z - cz) * 1.35]), FORECOURT);
+  // the other areas (the chapel's cobbled forecourt) on top of the paths
+  for (const area of areas.filter((a) => !LAWNS.has(a.kind))) torn(area.pts, AREA_FILL[area.kind] ?? C.path);
 }
 
 /** leaf(px, py, size): an autumn leaf (a tilted ellipse) at canvas pixels. */
@@ -97,7 +101,7 @@ function printLeaves({ g, ppu, X, Z, rnd, drifts }, trees, leaf) {
 function printPaths(k, PATHS, leaf) {
   const { g, ppu, X, Z, rnd, torn, bandOf, line } = k;
   for (const p of PATHS) torn(bandOf(p.pts, p.half + 0.12), P2.rgba(P2.shade(C.lawn, -0.12), 0.5), 'rgba(0,0,0,0)');
-  for (const p of PATHS) torn(bandOf(p.pts, p.half), p.asphalt ? C.asphalt : C.path);
+  for (const p of PATHS) torn(bandOf(p.pts, p.half), p.surface === 'asphalt' ? C.asphalt : C.path);
   for (const p of PATHS) line(p.pts, p.half * 0.7, P2.rgba('#fbf3df', 0.35));
   for (const p of PATHS) {
     for (let i = 0; i < p.pts.length - 1; i++) {

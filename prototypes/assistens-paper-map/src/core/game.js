@@ -10,7 +10,7 @@
  * game.state, updated every step:
  *   hero    { x, z, heading, speed, maxSpeed }  heading: radians, 0 faces south (+z), π/2 faces east
  *   riders  [{ id, x, z, dx, dz }]             the cyclists
- *   zoom    'walk' | 'map'
+ *   zoom    'street' | 'neighbourhood' | 'map' (config.js ZOOMS)
  *   view    { yaw }                            the style's camera turn (degrees), for the compass
  *   place   { name, about, kind } | null        where you are (a notable grave, a landmark)
  *   street  string | null                      the street you are on
@@ -19,7 +19,7 @@
  * game.things is every thing present now (it changes as tiles load and unload); game.map is the map for drawing
  * (see the end of this file).
  */
-import { WALK, NEARBY, START, ZOOMS, REGION, TILES } from '../config.js';
+import { WALK, NEARBY, START, ZOOMS, ZOOM_ORDER, REGION, TILES } from '../config.js';
 import { openWorld } from './world/store.js';
 import { createSpatialIndex } from './world/index.js';
 import { boundsOf } from './map/math.js';
@@ -76,7 +76,7 @@ export async function createGame({ loader, input = null } = {}) {
   const nearby = createNearby(NEARBY);
   const traffic = createTraffic(wayfinding.planCycleRoutes(), rng(5));
   const places = createPlaces(notable, landmarks.named, store.index);
-  const state = { hero: mover.state, riders: traffic.riders, zoom: 'walk', view: { yaw: 0 }, place: null, street: null, time: 0 };
+  const state = { hero: mover.state, riders: traffic.riders, zoom: ZOOM_ORDER[0], view: { yaw: 0 }, place: null, street: null, time: 0 };
   const frameHooks = [];
   const zoomHooks = [];
   const tileHooks = [];
@@ -92,12 +92,14 @@ export async function createGame({ loader, input = null } = {}) {
     for (const t of list) live.set(t.id, t);
     colliders.add(list);
     nearby.add(list);
+    places.add(list);
     thingsList = null;
   }
   function removeThings(list) {
     for (const t of list) live.delete(t.id);
     colliders.remove(list);
     nearby.remove(list);
+    places.remove(list);
     thingsList = null;
   }
 
@@ -182,8 +184,8 @@ export async function createGame({ loader, input = null } = {}) {
       sinceTiles = Infinity;
     },
 
-    /** Switch between the walking view and the map view (or to the one given). */
-    toggleZoom(to = state.zoom === 'walk' ? 'map' : 'walk', opts = {}) {
+    /** Step to the next zoom (street → neighbourhood → map → street), or to the one given. */
+    toggleZoom(to = ZOOM_ORDER[(ZOOM_ORDER.indexOf(state.zoom) + 1) % ZOOM_ORDER.length], opts = {}) {
       state.zoom = to;
       style?.zoom(to, opts);
       for (const fn of zoomHooks) fn(to);

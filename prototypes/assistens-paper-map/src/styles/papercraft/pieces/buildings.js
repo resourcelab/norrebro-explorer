@@ -30,34 +30,36 @@ function hash(s) {
 }
 const pick = (list, key) => list[Math.floor(hash(key) * list.length)];
 
-function facadePaint({ wall, brick }, k) {
+/** @param shopShare the shop floor's share of the facade's height (TOY.groundFloor over the block's height) */
+function facadePaint({ wall, brick }, k, shopShare) {
   return (P) => {
     const { box } = P;
-    const shopHeight = box.h * 0.2;
+    const shopHeight = box.h * shopShare;
     P.gradient(P2.shade(wall, 0.08), P2.shade(wall, -0.1), 0.35);
     if (brick) P.marks('brick', { color: P2.shade(wall, -0.45), alpha: 0.3, size: 0.12, units: true });
+    // prismFold prints a wall from the ground up: box.y0 is the pavement, box.y0 + box.h the cornice
     // the upper floors: a grid of windows, a few lit
     P.marks('window', {
-      region: { ...box, y1: box.y1 - shopHeight }, units: true, size: 0.37, color: '#f3e2b0', dark: '#3b4653', lit: 0.12, alpha: 1,
+      region: { ...box, y0: box.y0 + shopHeight }, units: true, size: 0.37, color: '#f3e2b0', dark: '#3b4653', lit: 0.12, alpha: 1,
     });
     P.draw((g) => {
-      const base = box.y0 + box.h - shopHeight;
+      const base = box.y0;
       // the ground floor: a darker band with shop windows
       g.fillStyle = P2.shade(wall, -0.22);
       g.fillRect(box.x0 - 1, base, box.w + 2, shopHeight);
       g.fillStyle = '#2d3640';
-      const shops = Math.max(1, Math.round(box.w / (box.h * 0.35)));
+      const shops = Math.max(1, Math.round(box.w / (shopHeight * 1.6))); // a window about 8 m wide
       for (let i = 0; i < shops; i++) {
-        g.fillRect(box.x0 + (i + 0.18) * (box.w / shops), base + shopHeight * 0.14, (box.w / shops) * 0.64, shopHeight * 0.7);
+        g.fillRect(box.x0 + (i + 0.18) * (box.w / shops), base + shopHeight * 0.12, (box.w / shops) * 0.64, shopHeight * 0.62);
       }
-      // an awning on every third facade style
+      // an awning on every third facade style, along the top of the shop floor
       if (k % 3 === 0) {
         g.fillStyle = AWNINGS[k % AWNINGS.length];
-        g.fillRect(box.x0 + box.w * 0.1, base - shopHeight * 0.02, box.w * 0.35, shopHeight * 0.22);
+        g.fillRect(box.x0 + box.w * 0.1, base + shopHeight * 0.78, box.w * 0.35, shopHeight * 0.2);
       }
       // the cornice
       g.fillStyle = P2.shade(wall, -0.3);
-      g.fillRect(box.x0 - 1, box.y0, box.w + 2, box.h * 0.04);
+      g.fillRect(box.x0 - 1, box.y0 + box.h * 0.96, box.w + 2, box.h * 0.04);
     });
     P.innerShade(P2.shade(wall, -0.6), { alpha: 0.22, blurPx: 8 });
   };
@@ -68,7 +70,14 @@ const roofPaint = (col) => (P) => {
   P.marks('scallop', { color: P2.shade(col, -0.35), alpha: 0.45, size: 0.18, units: true });
 };
 
-const FACADE_PAINTS = FACADES.map((f, k) => facadePaint(f, k));
+/** One paint per facade style and storey count (the shop floor's share of the height differs), made when first used. */
+const facadePaints = new Map();
+function facadePaintFor(id, levels) {
+  const k = Math.floor(hash(id + 'f') * FACADES.length);
+  const key = `${k}:${levels}`;
+  if (!facadePaints.has(key)) facadePaints.set(key, facadePaint(FACADES[k], k, GROUND_FLOOR / (GROUND_FLOOR + levels * STOREY)));
+  return facadePaints.get(key);
+}
 const ROOF_PAINTS = ROOFS.map(roofPaint);
 
 /**
@@ -109,7 +118,7 @@ export function apartmentBlock(H, popup, b) {
   const levels = b.levels || 5 + Math.floor(hash(b.id) * 2);
   const h = GROUND_FLOOR + levels * STOREY;
   const node = prismFold(pts, {
-    h, roof: 'flat', paints: { wall: pick(FACADE_PAINTS, b.id + 'f'), roof: pick(ROOF_PAINTS, b.id + 'r') },
+    h, roof: 'flat', paints: { wall: facadePaintFor(b.id, levels), roof: pick(ROOF_PAINTS, b.id + 'r') },
     paper: H.paper, seed: Math.floor(hash(b.id) * 1000), print: H.cardOpts(x, z, 1, null, FACADE_RES),
   });
   return popup(null, null, { node, height: h, x, z, yaw, level: true });
