@@ -54,6 +54,9 @@ export function createMyStyle(game) {
     // config.js). The game starts in game.state.zoom. opts.instant: no easing.
     zoom(mode, opts) {},
 
+    // Optional. The walker jumped far (game.goTo: a new walk home, a review): snap the camera onto him, no glide.
+    jumped(x, z) {},
+
     // Optional, for the page: a credit line for your art, and the controls hint.
     credit: '', hint: '',
 

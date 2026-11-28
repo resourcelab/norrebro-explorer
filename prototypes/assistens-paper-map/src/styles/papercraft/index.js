@@ -112,6 +112,8 @@ export function createPapercraftStyle(game) {
     add(things) { if (presenter) presenter.add(makeFor(things)); },
     remove(ids) { for (const id of ids) blocks.delete(id); presenter?.remove(ids); },
     zoom(mode, opts) { camera.set(mode, opts); },
+    // the harness's own place() puts the camera on him at once (it calls game.place again through placeHook: same spot)
+    jumped(x, z) { window.__papercraft?.place(x, z); },
     stats: () => presenter?.stats(),
     heights: () => presenter?.heights(),
   };

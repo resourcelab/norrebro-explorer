@@ -137,12 +137,13 @@ export function attachMinimap(game) {
     }
 
     // home: a little house, or an arrow on the rim with the distance
-    const [hx, hy] = toScreen(HOME.at[0], HOME.at[1]);
+    const home = game.state.round ? { at: [game.state.round.home.x, game.state.round.home.z], label: 'Hjem' } : HOME; // the round's home
+    const [hx, hy] = toScreen(home.at[0], home.at[1]);
     if (inView(hx, hy)) house(hx, hy);
     else {
       const [ex, ey] = rimPoint(hx - SIZE / 2, hy - SIZE / 2, SIZE / 2 - 14);
       house(ex, ey);
-      label(`${HOME.label} ${metres(Math.hypot(HOME.at[0] - p.x, HOME.at[1] - p.z))}`, ex, ey + 15);
+      label(`${home.label} ${metres(Math.hypot(home.at[0] - p.x, home.at[1] - p.z))}`, ex, ey + 15);
     }
 
     // places beyond the map: arrows on the rim

@@ -15,6 +15,7 @@
  *   place   { name, about, kind } | null        where you are (a notable grave, a landmark)
  *   street  string | null                      the street you are on
  *   time    seconds since the start
+ *   round   the find-your-way-home round, or null (core/round.js)
  *
  * game.things is every thing present now (it changes as tiles load and unload); game.map is the map for drawing
  * (see the end of this file).
@@ -77,7 +78,7 @@ export async function createGame({ loader, input = null } = {}) {
   const nearby = createNearby(NEARBY);
   const traffic = createTraffic(wayfinding.planCycleRoutes(), rng(5));
   const places = createPlaces(notable, landmarks.named, store.index);
-  const state = { hero: mover.state, riders: traffic.riders, zoom: ZOOM_ORDER[0], view: { yaw: 0 }, place: null, street: null, time: 0 };
+  const state = { hero: mover.state, riders: traffic.riders, zoom: ZOOM_ORDER[0], view: { yaw: 0 }, place: null, street: null, time: 0, round: null };
   const frameHooks = [];
   const zoomHooks = [];
   const tileHooks = [];
@@ -152,7 +153,9 @@ export async function createGame({ loader, input = null } = {}) {
   const game = {
     state, colliders,
     get things() { return (thingsList ??= [...live.values()]); },
-    settings: { walk: WALK, nearby: NEARBY, zooms: ZOOMS, start: START, tiles: TILES },
+    settings: { walk: WALK, nearby: NEARBY, zooms: ZOOMS, zoomOrder: ZOOM_ORDER, start: START, tiles: TILES },
+    /** Set by a round (core/round.js): asked before a zoom the player wants; false keeps the zoom where it is. */
+    zoomGuard: null,
     input: input ?? createKeyboard({ onZoom: () => game.toggleZoom() }),
 
     /** One step of the game (the style's loop calls it every frame, before drawing). */
@@ -187,7 +190,9 @@ export async function createGame({ loader, input = null } = {}) {
     async goTo(x, z) {
       await stream(x, z);
       await stream(x, z); // a load already running when we asked covered the old spot
-      return game.place(x, z);
+      if (!game.place(x, z)) return false;
+      style?.jumped?.(x, z); // a long jump: the style's camera snaps there rather than gliding across the map
+      return true;
     },
 
     /** Back to the start. */
@@ -199,8 +204,12 @@ export async function createGame({ loader, input = null } = {}) {
       sinceTiles = Infinity;
     },
 
-    /** Step to the next zoom (street → neighbourhood → map → street), or to the one given. */
+    /**
+     * Step to the next zoom (street → neighbourhood → map → street), or to the one given. A round may say no
+     * (zoomGuard); opts.force skips it (the round's own peeks).
+     */
     toggleZoom(to = ZOOM_ORDER[(ZOOM_ORDER.indexOf(state.zoom) + 1) % ZOOM_ORDER.length], opts = {}) {
+      if (!opts.force && game.zoomGuard && game.zoomGuard(to) === false) return;
       state.zoom = to;
       style?.zoom(to, opts);
       for (const fn of zoomHooks) fn(to);

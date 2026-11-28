@@ -21,6 +21,8 @@ import { attachStreetSign } from './ui/street-sign.js';
 import { attachMinimap } from './ui/minimap.js';
 import { attachZoomButton } from './ui/zoom-button.js';
 import { isCaptureMode } from './ui/overlay.js';
+import { createRound } from './core/round.js';
+import { attachRound } from './ui/round.js';
 
 // the world: baked into the page (the offline file), or fetched tile by tile from beside it (the hosted game, dev)
 const worldUrl = new URL(document.querySelector('meta[name=world]')?.content ?? './world/', location.href);
@@ -51,6 +53,11 @@ attachPlaceLabels(game);
 attachStreetSign(game);
 attachMinimap(game);
 if (!isCaptureMode()) attachZoomButton(game);
+
+// find your way home: pick where you live, start somewhere else, walk back (?free to just walk about)
+const round = createRound(game);
+attachRound(game, round);
+window.__round = round;
 if (new URLSearchParams(location.search).get('zoom') === 'map') game.toggleZoom('map', { instant: true }); // ?zoom=map
 
 // for reviews and the browser console

@@ -12,7 +12,27 @@ street you are on.
 - **Controls:** arrows / WASD walk · Shift run · Z (or the button) steps through the zooms: street, blocks, map ·
   click the minimap to switch too · drag to look around · click the scene to fold the world flat and back up.
 - **URL options:** `?style=flat` for the flat map style · `?mood=dusk` or `?mood=night` (papercraft) · `?zoom=map` opens
-  on the map view · `?capture` hides the overlays (for screenshots; `?capture&hud` keeps them).
+  on the map view · `?free` skips the find-your-way-home game and just walks about · `?capture` hides the overlays
+  (for screenshots; `?capture&hud` keeps them).
+
+## Find your way home
+
+The game: you pick where you live from places a child knows (your school, a church, a park, a bakery, the big
+playground: `src/data/home-places.js`), the game drops you at another of them a walk away, and you walk home by reading
+the streets: street signs, shops, steeples, the playground you pass.
+
+- **Levels:** *Lille · Little* starts 100–275 m from home with the corner map (home on it), 3 peeks and 3 arrows;
+  *Mellem · Middle* 225–500 m, no corner map, 3 peeks, 2 arrows; *Stor · Big* 450 m and more, no map, 1 peek, no
+  arrows (`LEVELS` in `src/core/round.js`).
+- **Help:** a peek shows the map view for 4 seconds (Z, the zoom button and the minimap spend one too, while a round
+  is on); an arrow beside the walker points home for 4 seconds. Each used costs a star: three stars for finding home
+  alone.
+- **Crossing roads:** stepping onto a road away from a zebra crossing shows a nudge to cross at the crossing; a walk
+  home without one earns the *Sikker fodgænger · Safe walker* badge.
+- **Home:** stars, the time, how far you walked against as the crow flies, and the route you took drawn on a map.
+- **Privacy:** home is a place in the game, never an address. The pick and the level are kept only in the browser
+  (`localStorage`), so the next visit starts a new walk straight away (*Skift · Change* to pick again).
+- The game logic is `src/core/round.js` (headless, tested in `tests/round.test.mjs`); the screens are `src/ui/round.js`.
 
 ## Finding your way
 
