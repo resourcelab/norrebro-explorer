@@ -12,6 +12,7 @@ import { printGround } from './world/ground.js';
 import { createPopup, printOnce } from './world/popup.js';
 import { createMakers } from './world/build.js';
 import { createPresenter } from './world/presenter.js';
+import { createCutaway } from './world/cutaway.js';
 import { createCamera } from './world/camera.js';
 import { startLife } from './world/life.js';
 import { createWalker } from './pieces/walker.js';
@@ -44,6 +45,7 @@ export function createPapercraftStyle(game) {
   const camera = createCamera(H, game.state.zoom);
   let presenter = null;
   let makeFor = null;
+  const blocks = new Map(); // block id -> footprint, for the cut-away
   let riders = [];
 
   return {
@@ -55,7 +57,8 @@ export function createPapercraftStyle(game) {
       H.walk.block(game.map.blocks); // the harness's own walk field: only paper-life's critters use it, to roam
       printGround(H, game.map);
       const creatures = [];
-      makeFor = createMakers(H, popup, { onCritter: (h, behaviour) => creatures.push([h, behaviour]) });
+      const makePieces = createMakers(H, popup, { onCritter: (h, behaviour) => creatures.push([h, behaviour]) });
+      makeFor = (things) => { for (const t of things) if (t.kind === 'block') blocks.set(t.id, t.pts); return makePieces(things); };
       const makers = makeFor(game.things);
 
       // the walker: a small 3D paper model; the game moves him, the harness swings his limbs by his stride
@@ -65,6 +68,7 @@ export function createPapercraftStyle(game) {
 
       presenter = createPresenter(H, makers);
       presenter.start(nearIds, game.settings.nearby.radius);
+      createCutaway(H, presenter, blocks);
 
       // cyclists: a few printed riders shared by all, moved to where the game says each frame
       const looks = Array.from({ length: RIDER_LOOKS }, (_, k) => printOnce(H, cyclist(k + 3)));
@@ -106,7 +110,7 @@ export function createPapercraftStyle(game) {
     },
     near(changes) { presenter?.update(changes); },
     add(things) { if (presenter) presenter.add(makeFor(things)); },
-    remove(ids) { presenter?.remove(ids); },
+    remove(ids) { for (const id of ids) blocks.delete(id); presenter?.remove(ids); },
     zoom(mode, opts) { camera.set(mode, opts); },
     stats: () => presenter?.stats(),
     heights: () => presenter?.heights(),

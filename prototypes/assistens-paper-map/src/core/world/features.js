@@ -7,8 +7,12 @@
  *             pts are wound with negative signed area, so the shape lies behind its first edge (what folds expect)
  *   street    { type, id, name, kind, width, pts, box, half }   half: the DRAWN half width (units), a little wider than
  *             life (TOY.streetWiden) so the streets read as the way through
- *   area      { type, id, kind, name, pts, box }                 park, grass, garden, pitch, playground, square,
- *             schoolyard, parking, flowerbed, water, wood, scrub (cemetery areas are left to the site that owns them)
+ *   area      { type, id, kind, name, sport, pts, box, axis }    park, grass, garden, pitch, playground, square,
+ *             schoolyard, parking, flowerbed, water, wood, scrub (cemetery areas are left to the site that owns them).
+ *             sport: a pitch's (soccer, basketball, table_tennis, skateboard...); of: a schoolyard's (school,
+ *             kindergarten, childcare); axis: the area's oriented box
+ *             { x, z, angle, length, width } (angle: its long side, radians), for goals at the ends and line markings
+ *   barrier   { id, kind, pts }                                   fence, hedge, wall (a line)
  *
  * Buildings inside a site (the cemetery's chapel and sheds) are left out: the site draws its own.
  */
@@ -26,6 +30,30 @@ const NEVER_RAISED = new Set(['garage', 'garages', 'shed', 'kiosk', 'roof', 'car
 const MAX_RAISED_CORNERS = 40;
 
 export const drawnHalf = (widthMetres) => (widthMetres * SCALE * TOY.streetWiden) / 2;
+
+/**
+ * The smallest box round a shape, turned to fit it (tried along each edge's direction): { x, z, angle, length,
+ * width }, with length along `angle` and length >= width.
+ */
+export function axisOf(pts) {
+  let best = null;
+  for (let i = 0; i < pts.length; i++) {
+    const [ax, az] = pts[i];
+    const [bx, bz] = pts[(i + 1) % pts.length];
+    const a = Math.atan2(bz - az, bx - ax);
+    const [c, s] = [Math.cos(a), Math.sin(a)];
+    let u0 = Infinity; let u1 = -Infinity; let v0 = Infinity; let v1 = -Infinity;
+    for (const [x, z] of pts) { const u = x * c + z * s; const v = -x * s + z * c; u0 = Math.min(u0, u); u1 = Math.max(u1, u); v0 = Math.min(v0, v); v1 = Math.max(v1, v); }
+    const area = (u1 - u0) * (v1 - v0);
+    if (!best || area < best.area) {
+      const [um, vm] = [(u0 + u1) / 2, (v0 + v1) / 2];
+      const long = u1 - u0 >= v1 - v0;
+      best = { area, x: um * c - vm * s, z: um * s + vm * c, angle: long ? a : a + Math.PI / 2, length: Math.max(u1 - u0, v1 - v0), width: Math.min(u1 - u0, v1 - v0) };
+    }
+  }
+  const { area: _area, ...axis } = best;
+  return axis;
+}
 const box = (pts) => { const b = boundsOf(pts); return [b.x0, b.z0, b.x1, b.z1]; };
 
 /**
@@ -51,12 +79,14 @@ export function prepareTile(raw, { landmarkIds, insideSite }) {
   });
   const areas = raw.areas.filter((a) => a.kind !== 'cemetery').map((a) => {
     const pts = a.pts.map(toUnits);
-    return { type: 'area', id: a.id, kind: a.kind, name: a.name, pts, box: box(pts) };
+    return { type: 'area', id: a.id, kind: a.kind, name: a.name, sport: a.sport ?? null, of: a.of ?? null, pts, box: box(pts), axis: axisOf(pts) };
   });
+  const barriers = (raw.barriers ?? []).map((b) => ({ id: b.id, kind: b.kind, pts: b.pts.map(toUnits) }));
   return {
-    buildings, streets, areas,
+    buildings, streets, areas, barriers,
     trees: raw.trees.map(toUnits),
-    props: raw.props.map(([x, z, kind]) => [...toUnits([x, z]), kind]),
+    // [x, z, kind, angle?, length?]: angle in radians, length in units, for props mapped as a strip
+    props: raw.props.map(([x, z, kind, angle, length]) => (angle === undefined ? [...toUnits([x, z]), kind] : [...toUnits([x, z]), kind, angle, length * SCALE])),
     pois: raw.pois.map(([x, z, name, category, type]) => ({ x: x * SCALE, z: z * SCALE, name, category, type: type ?? null })),
   };
 }

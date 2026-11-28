@@ -14,6 +14,7 @@
  */
 import { createGame } from './core/game.js';
 import { fetchLoader, inlineLoader } from './core/world/loaders.js';
+import { ZOOM_ORDER } from './config.js';
 import { STYLES, chooseStyle } from './styles/index.js';
 import { attachPlaceLabels } from './ui/place-labels.js';
 import { attachStreetSign } from './ui/street-sign.js';
@@ -38,7 +39,7 @@ window.__capture = {
   get ready() { return style.capture?.ready() ?? false; },
   style: style.name,
   step: (sec) => style.capture.step(sec),
-  restart: () => style.capture.restart(),
+  restart: () => { game.toggleZoom(ZOOM_ORDER[0], { instant: true }); style.capture.restart(); }, // each shot from the street zoom
   place: (x, z) => game.place(x, z),
   goTo: (x, z) => game.goTo(x, z),
   zoom: (mode) => game.toggleZoom(mode, { instant: true }),

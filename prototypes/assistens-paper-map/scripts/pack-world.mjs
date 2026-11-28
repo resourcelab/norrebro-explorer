@@ -17,7 +17,9 @@
  * Output, format "norrebro-explorer/packed@1" (metres from the area's north-west corner, x east, z south):
  *   world/manifest.json      origin, bbox, tile size, grid, margin, the tile list, source and licence
  *   world/overview.json      { bounds, streets, areas, buildings, landmarks }
- *   world/tiles/<i>_<j>.json { i, j, buildings, streets, areas, trees, props, pois }
+ *   world/tiles/<i>_<j>.json { i, j, buildings, streets, areas, barriers, trees, props, pois }
+ *                            areas carry `sport` for pitches; barriers are fences, hedges and walls (lines);
+ *                            props: [x, z, kind] or, for ones mapped as a strip, [x, z, kind, angle, length]
  *                            pois: [x, z, name, category, type] (type: bakery, cafe, hairdresser... from the OSM tags),
  *                            with the margin like the outlines; trees and props only in the tile they stand in
  *
@@ -95,18 +97,18 @@ const manifest = JSON.parse(readFileSync(join(SRC, 'manifest.json'), 'utf8'));
 const T = manifest.tileSize;
 const { nx: NX, nz: NZ } = manifest.grid;
 const seen = new Set();
-const all = { buildings: [], streets: [], areas: [], trees: new Map(), props: [], pois: [] };
+const all = { buildings: [], streets: [], areas: [], barriers: [], trees: new Map(), props: [], pois: [] };
 for (const key of manifest.tiles) {
   const tile = JSON.parse(readFileSync(join(SRC, 'tiles', `${key}.json`), 'utf8'));
-  for (const kind of ['buildings', 'streets', 'areas']) {
-    for (const f of tile[kind]) {
+  for (const kind of ['buildings', 'streets', 'areas', 'barriers']) {
+    for (const f of tile[kind] ?? []) {
       if (seen.has(f.id)) continue;
       seen.add(f.id);
       all[kind].push(f);
     }
   }
   for (const [x, z] of tile.trees) all.trees.set(`${Math.round(x)},${Math.round(z)}`, [Math.round(x), Math.round(z)]);
-  for (const [x, z, kind] of tile.props) all.props.push([Math.round(x), Math.round(z), kind]);
+  for (const [x, z, kind, angle, length] of tile.props) all.props.push(angle === undefined ? [Math.round(x * 2) / 2, Math.round(z * 2) / 2, kind] : [Math.round(x * 2) / 2, Math.round(z * 2) / 2, kind, angle, length]);
   for (const p of tile.pois) {
     if (seen.has('poi:' + p.id) || !p.name) continue;
     seen.add('poi:' + p.id);
@@ -124,9 +126,14 @@ const streets = all.streets
   .map((s) => ({ id: s.id, name: s.name ?? null, kind: s.kind, width: s.width, pts: rounded(douglasPeucker(s.pts, EPS.street)) }))
   .filter((s) => s.pts.length >= 2);
 const areas = all.areas
-  .map((a) => ({ id: a.id, kind: a.kind, name: a.name ?? null, pts: rounded(simplifyRing(a.pts, EPS.area)) }))
+  .map((a) => ({ id: a.id, kind: a.kind, name: a.name ?? null, ...(a.sport ? { sport: a.sport } : {}), ...(a.of ? { of: a.of } : {}), pts: rounded(simplifyRing(a.pts, EPS.area)) }))
   .filter((a) => a.pts.length >= 3);
-for (const list of [buildings, streets, areas]) for (const f of list) f.box = boxOf(f.pts);
+// fences, hedges and walls: the game stands them round playgrounds, schoolyards and pitches
+const barriers = all.barriers
+  .filter((b) => ['fence', 'hedge', 'wall'].includes(b.kind))
+  .map((b) => ({ id: b.id, kind: b.kind, pts: rounded(douglasPeucker(b.pts, EPS.street)) }))
+  .filter((b) => b.pts.length >= 2);
+for (const list of [buildings, streets, areas, barriers]) for (const f of list) f.box = boxOf(f.pts);
 
 // ---- tiles, with a margin ---------------------------------------------------------------------------------------------
 rmSync(OUT, { recursive: true, force: true });
@@ -145,6 +152,7 @@ for (let i = 0; i < NX; i++) {
       buildings: buildings.filter(touches).map(strip),
       streets: streets.filter(touches).map(strip),
       areas: areas.filter(touches).map(strip),
+      barriers: barriers.filter(touches).map(strip),
       trees: [...all.trees.values()].filter(owns),
       props: all.props.filter(owns),
       pois: all.pois.filter(near), // with the margin: shopfronts on one block are planned together (core/plan/shops.js)

@@ -3,4 +3,5 @@
 export const DRAWS = new Set([
   'wall', 'tree', 'grave', 'notable-grave', 'bench', 'lamp', 'tap', 'critter', 'gate-post', 'playground', 'bike-rack',
   'chapel', 'shed', 'block', 'church', 'flag', 'corner-sign', 'fingerpost', 'shopfront',
+  'sport-kit', 'flagpole', 'fence', 'bin', 'picnic-table', 'bus-stop', 'traffic-light', 'crossing',
 ]);

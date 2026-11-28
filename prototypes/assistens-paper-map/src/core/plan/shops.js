@@ -21,6 +21,8 @@ const FIND_BUILDING = 1.6; // units (8 m): a point this close to a block belongs
 const FACADE_MIN = 1.0; // units: shorter edges (corners, bays) don't take a shopfront
 const OPEN_GROUND = 0.8; // units out from a facade that must be open ground (not a building)
 const STREET_NEAR = 4; // units: a facade faces a street when one is this close in front of it
+/** Places drawn with a school's front (a big friendly name board), not a shop's. */
+const SCHOOLS = new Set(['school', 'kindergarten', 'childcare']);
 
 /** What the game calls a place: its type in words, or its group. */
 export const placeLabel = (type, group) => PLACE_TYPES[type] ?? PLACE_GROUPS[group] ?? '';
@@ -103,7 +105,7 @@ export function planShopfronts(t) {
     const [x, z] = at(s);
     fronts.push({
       x: x + n[0] * 0.02, z: z + n[1] * 0.02, a: at(s - w / 2), b: at(s + w / 2), yaw,
-      name: p.name, place: p.type, group: p.category, label: placeLabel(p.type, p.category), buildingId: b.id,
+      name: p.name, place: p.type, group: SCHOOLS.has(p.type) ? 'school' : p.category, label: placeLabel(p.type, p.category), buildingId: b.id,
       height: TOY.groundFloor, footprint: b.pts, own: owns(p),
     });
   }

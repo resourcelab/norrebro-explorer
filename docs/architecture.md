@@ -77,6 +77,11 @@ stand in for hand-written landmarks.
     they use at 2× life (walker 3.5 m), in metres in `config.js` `TOY`; three zooms (street, blocks, map).
   - **Shopfronts:** named shops, cafés, schools from OpenStreetMap stand on their block's street facade
     (`core/plan/shops.js`), and "where am I" names them.
+  - **Kids' detail from the map:** the importer keeps playground equipment, pitch sports, schoolyards (school or
+    kindergarten), crossings and signals, bus stops, bike-parking strips and fences; the core places equipment by
+    playground size around what is mapped, kit by sport, flagpoles and hopscotch in school yards, crossings with
+    lights, and moves kerb-side things off the drawn road (`core/plan/play.js`, `core/plan/street.js`). A placement
+    test and `tools/audit.mjs` keep everything out of buildings, roads and water and off each other.
 - **Next:** print the papercraft ground tile by tile (it is still one sheet for the play area, so papercraft pins those
   tiles), then grow the play area chunk by chunk (`PLAY_AREA` in `config.js`). Landmark texts. When a second app needs
   the core, it moves from the prototype to the repo root (`core/`, `styles/`) unchanged.

@@ -42,7 +42,20 @@ export const TOY = {
     fingerpost: 2.8 * PERSON,
     grave: 1.1 * PERSON,
     notableGrave: 1.6 * PERSON, // a little taller, so you spot them
-    playground: 2.4 * PERSON, // swings and climbing dome
+    playground: 2.4 * PERSON, // swings and climbing dome (the rest of the kit in proportion to them)
+    goal: 2.0 * PERSON, // a football goal
+    hoop: 3.2 * PERSON, // a basketball hoop
+    table: 0.76 * PERSON, // a table-tennis table
+    ramp: 1.5 * PERSON, // a skate ramp
+    trafficLight: 2.4 * PERSON, // a pedestrian light: its green man at the walker's eye
+    busStop: 2.4 * PERSON,
+    crossingSign: 2.2 * PERSON,
+    bin: 1.0 * PERSON,
+    picnic: 0.8 * PERSON,
+    flagpole: 10, // a school's flagpole: built, so true height
+    fence: 1.2, // fences, hedges and walls round playgrounds and yards: built, true height
+    yardHedge: 1.6,
+    yardWall: 2,
     critter: 0.45 * PERSON * 1.6, // birds and squirrels a bit bigger again, or they vanish
     lamp: 5.5, // a street lamp: built, so true height
     tree: 18, // a grown linden (each tree varies round this)

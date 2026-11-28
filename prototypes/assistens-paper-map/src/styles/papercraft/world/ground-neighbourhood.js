@@ -52,10 +52,57 @@ export function printNeighbourhoodGround(k, map) {
   printSandpits(k, map);
   printStreets(k, roads, streets.filter((s) => s.width < ROAD_MIN_WIDTH));
   printBuildings(k, map.features('buildings').map((b) => b.pts));
+  printMarkings(k, map);
   printStreetNames(k, [...roads, ...contextRoads.filter((s) => !s.pts.every(([x, z]) => inside(REGION, x, z)))]);
 }
 
 const inside = (r, x, z) => x > r.x0 && x < r.x1 && z > r.z0 && z < r.z1;
+
+/**
+ * Paint on the ground: zebra crossings (from the tiles' plans), white lines on the pitches (their axis, core/world/
+ * features.js), and chalk hopscotch courts in the school yards.
+ */
+function printMarkings({ g, X, Z, ppu }, map) {
+  const turned = (x, z, angle, draw) => { g.save(); g.translate(X(x), Z(z)); g.rotate(angle); g.scale(ppu, ppu); draw(); g.restore(); };
+  for (const tile of map.tiles()) {
+    for (const c of tile.plan?.crossings ?? []) {
+      turned(c.x, c.z, c.along, () => { // x along the road, y across it
+        g.fillStyle = 'rgba(250, 248, 240, 0.92)';
+        const bars = Math.max(3, Math.round(c.length / 0.18));
+        for (let k = 0; k < bars; k++) g.fillRect(-0.32, -c.length / 2 + (k + 0.2) * (c.length / bars), 0.64, (c.length / bars) * 0.55);
+      });
+    }
+    for (const h of tile.plan?.schoolyards?.hopscotch ?? []) {
+      turned(h.x, h.z, h.angle, () => {
+        const s = 0.32; // a square, about 1.6 m
+        const cells = [[0, 0], [1, 0], [2, -0.5], [2, 0.5], [3, 0], [4, -0.5], [4, 0.5], [5, 0]];
+        g.lineWidth = 0.045;
+        cells.forEach(([u, v], n) => {
+          g.strokeStyle = ['#f4f1ea', '#f2c94c', '#9fd3e8', '#f4a7b9'][n % 4];
+          g.strokeRect((u - 2.5) * s, (v - 0.5) * s, s, s);
+        });
+      });
+    }
+  }
+  for (const p of map.features('areas')) {
+    if (p.kind !== 'pitch' || !p.axis) continue;
+    const { x, z, angle, length, width } = p.axis;
+    turned(x, z, angle, () => {
+      g.strokeStyle = 'rgba(250, 248, 240, 0.85)';
+      g.lineWidth = 0.05;
+      const [L, W] = [length - 0.2, width - 0.2];
+      g.strokeRect(-L / 2, -W / 2, L, W);
+      g.beginPath();
+      g.moveTo(0, -W / 2);
+      g.lineTo(0, W / 2);
+      g.stroke();
+      g.beginPath();
+      g.arc(0, 0, Math.min(W * 0.18, 1.0), 0, 2 * Math.PI);
+      g.stroke();
+      if ((p.sport ?? '').includes('basketball')) for (const s of [-1, 1]) g.strokeRect(s > 0 ? L / 2 - L * 0.18 : -L / 2, -W * 0.2, L * 0.18, W * 0.4);
+    });
+  }
+}
 
 /** Clip drawing to everything outside the rectangle (a little inside its edge, so the two prints meet). */
 function clipOutside({ g, X, Z, W, H }, r) {

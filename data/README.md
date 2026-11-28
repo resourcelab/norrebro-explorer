@@ -32,6 +32,12 @@ Coordinates are metres from the origin, **x east and z south**. Each tile has it
 
 A feature that crosses a tile edge is listed in every tile it touches, with the same `id`; de-duplicate by `id`.
 
+Besides the outlines, the importer keeps what the game places for children: areas carry `sport` (pitches) and `of`
+(a schoolyard's school, kindergarten or childcare); props include playground equipment (`play:swing`,
+`play:slide`...), crossings (`crossing:zebra`, `crossing:traffic_signals`...), `signals` and `bus-stop`, and props
+mapped as a strip (a bike-parking row, a swing frame) carry their direction and length: `[x, z, kind, angle, length]`.
+Barriers (fences, hedges, walls) are lines.
+
 The game doesn't load these directly: `prototypes/assistens-paper-map/scripts/pack-world.mjs` packs them (simplified,
 re-tiled with a margin, plus an overview of the whole area) into what the browser fetches. The game's coordinates are
 this same frame (see the prototype's `src/core/geo.js`).

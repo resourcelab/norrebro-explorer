@@ -22,6 +22,7 @@ playwright install chromium
 cd prototypes/assistens-paper-map
 npm run dev        # http://localhost:5173/src/ (ES modules need a local server); add ?style=flat for the flat map
 npm test           # map and walking-rule tests (Node, no browser)
+node prototypes/assistens-paper-map/tools/audit.mjs   # where things stand: in buildings, on roads, overlapping
 npm run build      # dist/: index.html + world/ (hosted), and the offline assistens-kirkegaard-paper-walk.html
 npm run capture    # headless screenshots into docs/frames/ (needs Playwright)
 ```

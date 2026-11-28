@@ -23,7 +23,7 @@ export default [
   },
   {
     // build and data tools run in Node
-    files: ['tools/**', '**/scripts/**', 'eslint.config.js'],
+    files: ['**/tools/**', '**/scripts/**', 'eslint.config.js'],
     languageOptions: { globals: { ...globals.node } },
   },
 ];

@@ -113,7 +113,17 @@ const POI_CATEGORY = (t) => {
   if (t.leisure === 'park' || t.natural) return 'nature';
   return null;
 };
-const PROP = (t) => (t.amenity === 'bench' ? 'bench' : t.amenity === 'bicycle_parking' ? 'bikes' : t.highway === 'street_lamp' ? 'lamp' : t.amenity === 'waste_basket' ? 'bin' : t.leisure === 'picnic_table' ? 'picnic' : t.amenity === 'drinking_water' ? 'tap' : null);
+const PROP = (t) => (t.amenity === 'bench' ? 'bench' : t.amenity === 'bicycle_parking' ? 'bikes' : t.highway === 'street_lamp' ? 'lamp' : t.amenity === 'waste_basket' ? 'bin' : t.leisure === 'picnic_table' ? 'picnic' : t.amenity === 'drinking_water' || t.man_made === 'water_tap' ? 'tap'
+  : t.playground ? `play:${t.playground}` // equipment inside a playground: swing, slide, structure, sandpit, springy...
+  : t.highway === 'crossing' || t.footway === 'crossing' ? `crossing:${t.crossing ?? 'marked'}` // zebra, traffic_signals, uncontrolled...
+  : t.highway === 'traffic_signals' ? 'signals'
+  : t.highway === 'bus_stop' ? 'bus-stop'
+  : null);
+/**
+ * Props mapped as small areas or lines (a bike-parking strip, a swing frame): kept as a point at their middle, with
+ * the direction and length of their long side, [x, z, kind, angle, length].
+ */
+const AREA_PROP = (t) => (t.amenity === 'bicycle_parking' ? 'bikes' : t.playground ? `play:${t.playground}` : t.amenity === 'bench' ? 'bench' : t.leisure === 'picnic_table' ? 'picnic' : null);
 const KEEP_TAGS = ['amenity', 'shop', 'tourism', 'historic', 'leisure', 'cuisine', 'opening_hours', 'website', 'wikipedia', 'wikidata', 'addr:street', 'addr:housenumber', 'start_date', 'description', 'name:en', 'artist_name'];
 const pick = (t) => Object.fromEntries(Object.entries(t).filter(([k]) => KEEP_TAGS.includes(k)));
 
@@ -129,13 +139,17 @@ for (const way of ways.values()) {
     if (!isClosed(way)) continue;
     features.buildings.push({ id: `w${way.id}`, pts, levels: num(t['building:levels']), height: num(t.height), kind: t.building ?? 'part', name: t.name, addr: addr(t) });
   } else if (AREA_KIND(t) && isClosed(way)) {
-    features.areas.push({ id: `w${way.id}`, kind: AREA_KIND(t), name: t.name, pts });
+    features.areas.push({ id: `w${way.id}`, kind: AREA_KIND(t), name: t.name, sport: t.sport, surface: t.surface, of: AREA_KIND(t) === 'schoolyard' ? t.amenity : undefined, pts });
   } else if (t.highway && STREET_WIDTH[t.highway] !== undefined) {
     features.streets.push({ id: `w${way.id}`, kind: t.highway, name: t.name, width: STREET_WIDTH[t.highway], surface: t.surface, oneway: t.oneway === 'yes' || undefined, pts });
   } else if (t.barrier && ['wall', 'fence', 'hedge', 'retaining_wall', 'city_wall'].includes(t.barrier)) {
     features.barriers.push({ id: `w${way.id}`, kind: t.barrier, pts });
   } else if (t.natural === 'tree_row') {
     for (const p of pts) features.trees.push(p);
+  } else if (AREA_PROP(t)) {
+    const c = centroid(pts);
+    const [angle, length] = longSide(pts);
+    features.props.push([c[0], c[1], AREA_PROP(t), angle, length]);
   } else if (t.railway === 'subway') {
     // underground: skip
   }
@@ -152,7 +166,7 @@ for (const rel of relations) {
   for (const [k, ring] of rings.entries()) {
     const id = `r${rel.id}${rings.length > 1 ? `-${k}` : ''}`;
     if (t.building) features.buildings.push({ id, pts: ring.pts, levels: num(t['building:levels']), height: num(t.height), kind: t.building, name: t.name, addr: addr(t) });
-    else if (AREA_KIND(t)) features.areas.push({ id, kind: AREA_KIND(t), name: t.name, pts: ring.pts, partial: ring.closed ? undefined : true });
+    else if (AREA_KIND(t)) features.areas.push({ id, kind: AREA_KIND(t), name: t.name, sport: t.sport, of: AREA_KIND(t) === 'schoolyard' ? t.amenity : undefined, pts: ring.pts, partial: ring.closed ? undefined : true });
   }
   if (t.name && POI_CATEGORY(t) && rings.length) {
     const c = centroid(rings[0].pts);
@@ -181,6 +195,16 @@ function num(v) {
 /** "Street 12" from the address tags, or undefined. */
 function addr(t) {
   return t['addr:street'] ? `${t['addr:street']} ${t['addr:housenumber'] ?? ''}`.trim() : undefined;
+}
+
+/** The direction (radians, of x east and z south) and length (m) of a shape's longest side. */
+function longSide(pts) {
+  let best = [0, 0];
+  for (let i = 0; i < pts.length - 1; i++) {
+    const L = Math.hypot(pts[i + 1][0] - pts[i][0], pts[i + 1][1] - pts[i][1]);
+    if (L > best[1]) best = [Math.round(Math.atan2(pts[i + 1][1] - pts[i][1], pts[i + 1][0] - pts[i][0]) * 1000) / 1000, round1(L)];
+  }
+  return best;
 }
 
 /** Average of the points, rounded to 0.1 m (where an area's point of interest goes). */

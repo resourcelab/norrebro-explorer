@@ -11,18 +11,21 @@
  *   monument   a grave, a statue                      prop      street furniture and play kit
  *   animal     birds, squirrels                       sign      words on a post: names, directions
  *   place      a shop, café or other named place on a ground floor (name, category of place)
+ *   marking    paint on the ground (a zebra crossing): a style may print it rather than stand it up
  */
-export const CATEGORIES = ['building', 'landmark', 'barrier', 'tree', 'monument', 'prop', 'animal', 'sign', 'place'];
+export const CATEGORIES = ['building', 'landmark', 'barrier', 'tree', 'monument', 'prop', 'animal', 'sign', 'place', 'marking'];
 
 export const KIND_CATEGORY = {
   chapel: 'building', shed: 'building', block: 'building',
   church: 'landmark', flag: 'landmark',
-  wall: 'barrier', 'gate-post': 'barrier',
+  wall: 'barrier', 'gate-post': 'barrier', fence: 'barrier',
   tree: 'tree',
   grave: 'monument', 'notable-grave': 'monument',
-  bench: 'prop', lamp: 'prop', tap: 'prop', 'bike-rack': 'prop', playground: 'prop',
+  bench: 'prop', lamp: 'prop', tap: 'prop', 'bike-rack': 'prop', playground: 'prop', 'sport-kit': 'prop', bin: 'prop',
+  'picnic-table': 'prop', flagpole: 'prop',
   critter: 'animal',
-  'corner-sign': 'sign', fingerpost: 'sign',
+  'corner-sign': 'sign', fingerpost: 'sign', 'traffic-light': 'sign', 'bus-stop': 'sign',
+  crossing: 'marking',
   shopfront: 'place',
 };
 

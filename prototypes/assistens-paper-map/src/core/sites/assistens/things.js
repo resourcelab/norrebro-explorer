@@ -32,11 +32,13 @@ export function describeAssistens(plan, rnd, add) {
   WALLS.forEach((w, i) => {
     for (const [a, b] of splitRuns(w, { maxLen: WALL_RUN, gap: openingTestFor(i) })) add('wall', { wall: 'wall', a, b, x: (a[0] + b[0]) / 2, z: (a[1] + b[1]) / 2 });
   });
-  for (const [x, z] of gatePosts()) add('gate-post', { x, z, solid: SOLID.gatePost });
+  const posts = gatePosts();
+  for (const [x, z] of posts) add('gate-post', { x, z, solid: SOLID.gatePost });
   for (const h of HEDGES) {
     for (const [a, b] of splitRuns(h, { maxLen: HEDGE_RUN })) add('wall', { wall: 'hedge', a, b, x: (a[0] + b[0]) / 2, z: (a[1] + b[1]) / 2 });
   }
   for (const t of plan.trees) {
+    if (posts.some(([x, z]) => Math.hypot(x - t.x, z - t.z) < (SOLID.gatePost + SOLID.tree) * 0.9)) continue; // not in a gateway
     const size = between(0.88, 1.1);
     add('tree', { x: t.x, z: t.z, species: t.kind, size, seed: Math.floor(rnd() * 1e6), solid: SOLID.tree, area: 'cemetery' });
   }

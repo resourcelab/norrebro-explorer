@@ -102,6 +102,38 @@ export function createFlatStyle(game) {
     }
   }
 
+  /** Paint on the ground: zebra crossings, pitch lines, hopscotch (the same marks the papercraft ground prints). */
+  function drawMarkings() {
+    const turned = (x, z, angle, fn) => { g.save(); g.translate(sx(x), sz(z)); g.rotate(angle); g.scale(ppu, ppu); fn(); g.restore(); };
+    for (const tile of map.tiles()) {
+      for (const c of tile.plan?.crossings ?? []) {
+        if (!visible([c.x - 3, c.z - 3, c.x + 3, c.z + 3])) continue;
+        turned(c.x, c.z, c.along, () => {
+          g.fillStyle = '#ffffff';
+          const bars = Math.max(3, Math.round(c.length / 0.18));
+          for (let k = 0; k < bars; k++) g.fillRect(-0.32, -c.length / 2 + (k + 0.2) * (c.length / bars), 0.64, (c.length / bars) * 0.55);
+        });
+      }
+      for (const h of tile.plan?.schoolyards?.hopscotch ?? []) {
+        turned(h.x, h.z, h.angle, () => {
+          g.lineWidth = 0.05;
+          [[0, 0], [1, 0], [2, -0.5], [2, 0.5], [3, 0], [4, -0.5], [4, 0.5], [5, 0]].forEach(([u, v], n) => { g.strokeStyle = ['#9a8f7a', '#e0a33a', '#5aa0c8', '#d4537e'][n % 4]; g.strokeRect((u - 2.5) * 0.32, (v - 0.5) * 0.32, 0.32, 0.32); });
+        });
+      }
+    }
+    for (const { f, box } of layers.areas) {
+      if (f.kind !== 'pitch' || !f.axis || !visible(box)) continue;
+      const { x, z, angle, length, width } = f.axis;
+      turned(x, z, angle, () => {
+        g.strokeStyle = '#ffffff';
+        g.lineWidth = 0.06;
+        g.strokeRect(-(length - 0.2) / 2, -(width - 0.2) / 2, length - 0.2, width - 0.2);
+        g.beginPath(); g.moveTo(0, -(width - 0.2) / 2); g.lineTo(0, (width - 0.2) / 2); g.stroke();
+        g.beginPath(); g.arc(0, 0, Math.min(width * 0.18, 1), 0, 2 * Math.PI); g.stroke();
+      });
+    }
+  }
+
   function draw() {
     if (!layers) gather();
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -122,6 +154,7 @@ export function createFlatStyle(game) {
     g.restore();
 
     drawGround(layers);
+    drawMarkings();
     for (const { f, box } of site.areas.filter((a) => a.f.kind === 'cemetery')) if (visible(box)) { g.fillStyle = COLOURS.lawn; trace(f.pts); g.fill(); }
     for (const { f, box } of site.paths) {
       if (!visible(box)) continue;
@@ -189,7 +222,25 @@ export function createFlatStyle(game) {
       case 'tap': dot(t.x, t.z, 0.25, COLOURS.tap); break;
       case 'critter': dot(t.x, t.z, 0.18, '#2f2d2e'); break;
       case 'gate-post': dot(t.x, t.z, 0.35, COLOURS.wall); break;
-      case 'playground': dot(t.x, t.z, 0.8, COLOURS.kit); dot(t.x, t.z, 0.4, '#fff3df'); break;
+      case 'playground': {
+        const r = { springy: 0.35, sandpit: 0.9, roundabout: 0.55, playhouse: 0.5 }[t.equipment] ?? 0.75;
+        dot(t.x, t.z, r, t.equipment === 'sandpit' ? '#e9cf8e' : COLOURS.kit);
+        if (t.equipment !== 'sandpit') dot(t.x, t.z, r * 0.45, '#fff3df');
+        break;
+      }
+      case 'sport-kit': dot(t.x, t.z, t.equipment === 'table' ? 0.5 : 0.3, t.equipment === 'hoop' ? '#e07a2a' : '#f4f1ea'); break;
+      case 'flagpole': dot(t.x, t.z, 0.3, '#c8102e'); dot(t.x, t.z, 0.12, '#ffffff'); break;
+      case 'fence':
+        g.strokeStyle = t.style === 'hedge' ? '#5f8a48' : t.style === 'wall' ? '#b8664a' : '#3f5a44';
+        g.lineWidth = Math.max(1, (t.style === 'hedge' ? 0.3 : 0.1) * ppu);
+        trace([t.a, t.b], false);
+        g.stroke();
+        break;
+      case 'bin': dot(t.x, t.z, 0.18, '#2f5a3a'); break;
+      case 'picnic-table': g.fillStyle = COLOURS.bench; g.fillRect(sx(t.x) - 0.45 * ppu, sz(t.z) - 0.3 * ppu, 0.9 * ppu, 0.6 * ppu); break;
+      case 'bus-stop': g.fillStyle = '#f5c400'; g.fillRect(sx(t.x) - 0.3 * ppu, sz(t.z) - 0.3 * ppu, 0.6 * ppu, 0.6 * ppu); break;
+      case 'traffic-light': dot(t.x, t.z, 0.2, COLOURS.ink); dot(t.x, t.z, 0.1, '#3ac46a'); break;
+      case 'crossing': break; // painted with the ground (drawMarkings)
       case 'bike-rack':
         g.strokeStyle = COLOURS.rack;
         g.lineWidth = Math.max(1, 0.12 * ppu);

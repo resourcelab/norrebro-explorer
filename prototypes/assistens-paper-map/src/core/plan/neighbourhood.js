@@ -1,6 +1,7 @@
 /**
- * The neighbourhood's rules, applied one TILE at a time: street and park trees, playgrounds and their kit, bike racks
- * and benches, corner signs where named streets meet. Positions only; core/world.js turns them into things.
+ * The neighbourhood's rules, applied one TILE at a time: street and park trees, playgrounds, corner signs where named
+ * streets meet. Play equipment is in plan/play.js, street furniture and crossings in plan/street.js, shops in
+ * plan/shops.js. Positions only; core/world.js turns them into things.
  *
  * Every rule here reads only the tile it is given (its features come with a margin, see scripts/pack-world.mjs) and the
  * sites, and draws from the tile's own random stream, so a tile plans the same whichever tiles are loaded round it.
@@ -11,13 +12,14 @@
  *   t.rnd           the tile's random stream
  *   t.inRegion      (x, z) -> inside the play area
  */
-import { inPolygon, boundsOf, polylineDistance, segmentIntersection, segmentDistance, centroid } from '../map/math.js';
+import { polylineDistance, segmentIntersection, segmentDistance, centroid } from '../map/math.js';
 import { lonLatToUnits, unitsOf } from '../geo.js';
 import { PLAYGROUND_POINTS } from '../../data/landmarks.js';
 import { siteAt, siteEdgeDistance } from '../sites/index.js';
+import { axisOf } from '../world/features.js';
+import { toPavement } from './street.js';
 
 const STREET_TREE_KINDS = ['linden', 'linden', 'maple', 'chestnut'];
-const PLAYGROUND_KIT = ['swings', 'slide', 'climber', 'seesaw'];
 
 const owns = ({ rect }, x, z) => x >= rect.x0 && x < rect.x1 && z >= rect.z0 && z < rect.z1;
 
@@ -30,12 +32,17 @@ const inReach = ({ reach }, x, z) => x >= reach.x0 && x <= reach.x1 && z >= reac
  */
 export const freeGround = (t, x, z, r = 0.6) => inReach(t.tile, x, z) && t.inRegion(x, z) && !siteAt(x, z) && !t.tile.index.buildingAt(x, z, r) && siteEdgeDistance(x, z) > 1.2;
 
-/** Mapped street and park trees, thinned to 2.6 units apart. Returns [{ x, z, kind }]. */
+/**
+ * Mapped street and park trees, thinned to 2 units apart. A tree mapped on the kerb that falls on a road's drawn
+ * width is moved out onto the pavement (plan/street.js toPavement). Returns [{ x, z, kind }].
+ */
 export function planStreetTrees(t) {
   const trees = [];
-  for (const [x, z] of t.tile.trees) {
-    if (!freeGround(t, x, z) || t.tile.index.streetDistance(x, z) < -0.2) continue;
-    if (trees.some((q) => Math.hypot(q.x - x, q.z - z) < 2.6)) continue;
+  for (const [mx, mz] of t.tile.trees) {
+    const spot = toPavement(t, mx, mz, 0.6);
+    if (!spot) continue;
+    const [x, z] = spot;
+    if (trees.some((q) => Math.hypot(q.x - x, q.z - z) < 2)) continue;
     trees.push({ x, z, kind: STREET_TREE_KINDS[Math.floor(t.rnd() * STREET_TREE_KINDS.length)] });
   }
   return trees;
@@ -43,48 +50,21 @@ export function planStreetTrees(t) {
 
 /**
  * Playgrounds owned by this tile (their middle is in it): every mapped play area in the play area, plus the ones
- * OpenStreetMap maps as a point, drawn as a sandpit (data/landmarks.js PLAYGROUND_POINTS). Returns [{ pts, sandpit }].
+ * OpenStreetMap maps as a point, drawn as a sandpit (data/landmarks.js PLAYGROUND_POINTS). Returns
+ * [{ pts, axis, sandpit }] (axis: the oriented box, core/world/features.js).
  */
 export function planPlaygrounds(t) {
   const out = t.tile.areas
     .filter((a) => a.kind === 'playground' && owns(t.tile, ...centroid(a.pts)) && a.pts.some(([x, z]) => t.inRegion(x, z)))
-    .map((a) => ({ pts: a.pts, sandpit: false }));
+    .map((a) => ({ pts: a.pts, axis: a.axis, sandpit: false }));
   for (const p of PLAYGROUND_POINTS) {
     const [x, z] = lonLatToUnits(...p.lonLat);
     if (!owns(t.tile, x, z)) continue;
     const [rx, rz] = [unitsOf(p.rx), unitsOf(p.rz)];
-    out.push({ pts: Array.from({ length: 12 }, (_, k) => [x + Math.cos((k / 12) * 2 * Math.PI) * rx, z + Math.sin((k / 12) * 2 * Math.PI) * rz]), sandpit: true });
+    const pts = Array.from({ length: 12 }, (_, k) => [x + Math.cos((k / 12) * 2 * Math.PI) * rx, z + Math.sin((k / 12) * 2 * Math.PI) * rz]);
+    out.push({ pts, axis: axisOf(pts), sandpit: true });
   }
   return out;
-}
-
-/** Up to four pieces of kit per playground (swings, slide, climbing dome, seesaw), 2.6 units apart. Returns [{ x, z, kind }]. */
-export function planPlaygroundKit(t, playgrounds) {
-  const kit = [];
-  for (const pg of playgrounds) {
-    const { x0, z0, x1, z1 } = boundsOf(pg.pts);
-    let k = Math.floor(t.rnd() * PLAYGROUND_KIT.length);
-    for (let tries = 0, placed = 0; tries < 60 && placed < 4; tries++) {
-      const x = x0 + t.rnd() * (x1 - x0);
-      const z = z0 + t.rnd() * (z1 - z0);
-      if (!inPolygon(x, z, pg.pts) || !freeGround(t, x, z, 0.8) || kit.some((e) => Math.hypot(e.x - x, e.z - z) < 2.6)) continue;
-      kit.push({ x, z, kind: PLAYGROUND_KIT[k++ % PLAYGROUND_KIT.length] });
-      placed++;
-    }
-  }
-  return kit;
-}
-
-/** Mapped bike racks and benches on the pavements, thinned. Returns { racks: [[x, z]], benches: [[x, z]] }. */
-export function planStreetFurniture(t) {
-  const racks = [];
-  const benches = [];
-  for (const [x, z, kind] of t.tile.props) {
-    if (!freeGround(t, x, z, 0.4) || t.tile.index.streetDistance(x, z) < -0.3) continue;
-    if (kind === 'bikes' && racks.every((q) => Math.hypot(q[0] - x, q[1] - z) > 3.5)) racks.push([x, z]);
-    if (kind === 'bench' && benches.every((q) => Math.hypot(q[0] - x, q[1] - z) > 2.4)) benches.push([x, z]);
-  }
-  return { racks, benches };
 }
 
 // ---- corner signs ----------------------------------------------------------------------------------------------------

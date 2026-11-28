@@ -10,7 +10,7 @@ export const LANDMARKS = [
   { id: 'simeons', kind: 'church', name: 'Simeons Kirke', building: 'w108368332' },
   { id: 'brorsons', kind: 'church', name: 'Brorsons Kirke', building: 'w102861628' },
   { id: 'anna', kind: 'church', name: 'Anna Kirke', building: 'w96963560' },
-  { id: 'runddel', kind: 'flag', name: 'Nørrebros Runddel', lonLat: [12.548936, 55.69434], color: '#c4523a' }, // where Nørrebrogade crosses Jagtvej
+  { id: 'runddel', kind: 'flag', name: 'Nørrebros Runddel', lonLat: [12.549135, 55.69434], color: '#c4523a' }, // on the corner where Nørrebrogade crosses Jagtvej
   { id: 'folkets-park', kind: 'flag', name: 'Folkets Park', lonLat: [12.554577, 55.687656], color: '#5f9a48' },
   { id: 'hans-tavsens', kind: 'flag', name: 'Hans Tavsens Park', lonLat: [12.547167, 55.68923], color: '#5f9a48' },
   // beyond the walkable area

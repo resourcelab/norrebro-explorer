@@ -13,6 +13,8 @@ import { BUILD } from '../settings.js';
 const UP = 1;
 const DOWN = 0;
 const FOLDING = 2;
+const CUT = 3; // folded down out of the way of the camera (cutaway.js), still shown
+const CUT_FOLD = 0.06; // how far up a cut-away piece stays: nearly flat, so you still see where it stands
 
 /**
  * @param makers Map id -> { x, z, node, make: () => hinge | hinge[] | null }
@@ -109,7 +111,23 @@ export function createPresenter(H, makers, { buildPerStep = BUILD.buildPerStep, 
         const it = items.get(id);
         if (!it) continue;
         it.wanted = false;
-        if (it.hinges && it.state === UP && started) lower(it);
+        if (it.hinges && (it.state === UP || it.state === CUT) && started) lower(it);
+      }
+    },
+    /**
+     * The pieces standing between the camera and the walker (cutaway.js): they fold down nearly flat, and those that
+     * are no longer in the way rise again (if they are still near).
+     */
+    cutAway(ids) {
+      for (const id of ids) {
+        const it = items.get(id);
+        if (!it || !it.hinges || it.state !== UP) continue;
+        for (const h of it.hinges) h.set(CUT_FOLD, 0);
+        it.state = CUT;
+      }
+      for (const it of items.values()) {
+        if (it.state !== CUT || ids.has(it.id)) continue;
+        if (it.wanted) { for (const h of it.hinges) h.set(1, 0); it.state = UP; } else lower(it);
       }
     },
     /** Things that arrived with a tile that loaded: their makers. They are built when the game says they are near. */

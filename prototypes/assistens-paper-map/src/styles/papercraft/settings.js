@@ -62,6 +62,8 @@ export const BUILD = { buildPerStep: 4, budgetMs: 5, startShare: 0.5 };
 const BASE = {
   walker: 3.1, cyclist: 3.1, bench: 1.14, bikeRack: 0.8, tap: 1.2, lamp: 3.0, sign: 2.3, fingerpost: 2.8,
   grave: 1.6, notableGrave: 2.2, playground: 2.4, critter: 0.85, tree: 8.0, shed: 2.6, chapel: 6.2,
+  goal: 1.4, hoop: 3.1, table: 1.05, ramp: 1.4, flagpole: 4.4, trafficLight: 2.6, busStop: 2.4, crossingSign: 2.2,
+  bin: 1.05, picnic: 0.9,
 };
 export const scaleOf = (kind) => (TOY.heights[kind] * SCALE) / BASE[kind];
 /** Walls and hedges are folded to a height (units), not scaled; gate posts stand a little above the wall. */

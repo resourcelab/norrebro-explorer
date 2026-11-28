@@ -25,6 +25,19 @@ look (colours, camera, lens) lives in its `settings.js`.
   real ones. People and what they use (benches, bike racks, signs, play kit, graves) are 2× life, so the walker
   (3.5 m) stands under the shop signs, between the doors. Streets are drawn 1.4× wider than mapped, landmarks 1.3×
   taller than life. All of it is `TOY` in `src/config.js`, in metres as drawn.
+- **Where children play:** equipment OpenStreetMap maps in a playground stands where it is mapped; the rest is filled
+  in by the playground's size (a 70 m² corner gets a spring rider and a sandpit, the 2,600 m² one by Nørrebroparken
+  nine pieces: swings, basket swing, slide, climbing frame, seesaw, roundabout, playhouse...), off the pitches mapped
+  inside it. Kindergarten yards are playgrounds for small children; school yards get a chalk hopscotch court, and
+  every school and kindergarten a flagpole with the Danish flag. Pitches get goals, hoops, a table-tennis table or a
+  skate ramp by their mapped sport, and white lines; mapped fences and hedges round all of these stand up.
+- **Streets a child learns to read:** zebra crossings painted where they are mapped, traffic lights with a green man
+  at the ones with signals, a blue crossing sign at the others, Copenhagen's yellow bus stops, and the benches, bike
+  racks, bins, picnic tables and drinking taps OpenStreetMap maps. Streets are drawn wider than mapped, so something
+  mapped on the kerb is moved straight out onto the pavement rather than dropped; things that crowd each other are
+  nudged apart.
+- **Never lost behind a block:** a block standing between the camera and the walker folds down nearly flat while
+  he is behind it, and rises again when he walks out (papercraft).
 - **Shops on the ground floors:** every named shop, café, bakery, school and library OpenStreetMap places in a block
   (about 130 in the play area) gets a shopfront on that block's street facade: a lit window, a door, an awning
   coloured by kind (food, shops, everyday, culture) and its name on the fascia. Stand in front of one and the label
@@ -48,7 +61,7 @@ look (colours, camera, lens) lives in its `settings.js`.
   and those more than ~520 m away are dropped, with everything on them. The flat style streams this way now; papercraft
   still loads the whole play area up front, because its ground is printed as one sheet.
 
-Status: v0.6 (styles fully apart from papercraft, toy scale against true buildings, shopfronts), 2026-11-27. The first slice of [Nørrebro Explorer](../../README.md).
+Status: v0.7 (playgrounds, schools, pitches, crossings and street furniture placed from the map), 2026-11-28. The first slice of [Nørrebro Explorer](../../README.md).
 
 ![Nørrebrogade side](docs/2026-11-24-norrebrogade-side.png)
 ![Hans Tavsens Park](docs/2026-11-24-hans-tavsens-park.png)
@@ -62,6 +75,7 @@ npm run dev        # pack the world, serve this folder, then open http://localho
 npm test           # pack the world, then the core, map, wayfinding, shop and style tests (Node, no browser)
 npm run build      # pack the world, then dist/index.html + dist/world/ (hosted) and the offline single file
 npm run pack-world # ../../data/world (full detail) -> world/ (what the game loads); dev, test and build run it first
+node tools/audit.mjs # placement audit: anything in a building, on a road, in water, or on top of another thing
 npm run capture    # headless overview frames into docs/frames/ (needs Python + Playwright); any style:
                    # python3 tools/capture.py . overview "bakery:stand=104.2,53" --style flat
 ```
@@ -127,8 +141,9 @@ src/
 │   ├── geo.js               the world frame: longitude/latitude ↔ metres ↔ units (the only place that projects)
 │   ├── world/               tiles: store (load, unload), features (packed data → units), spatial index, loaders
 │   ├── map/                 math, landmarks, the walk rules
-│   ├── plan/                where things stand (seeded): per-tile neighbourhood rules and shopfronts; fingerposts
-│   │                        and cycle routes
+│   ├── plan/                where things stand (seeded), per tile: neighbourhood (trees, playgrounds, corner signs),
+│   │                        play (equipment, schoolyards, pitches, fences), street (furniture, crossings), shops;
+│   │                        and for the whole map, wayfinding (fingerposts, cycle routes)
 │   ├── sites/               places with their own plan, laid over the tiles: assistens/ (map, plan, things)
 │   ├── world.js             the world as things (the contract with the styles): per tile, per site, always there
 │   ├── kinds.js             every kind of thing and its category (a style draws unknown kinds by category)
@@ -159,8 +174,10 @@ tests/
 ├── map.test.mjs             geometry, the world frame, the Assistens plan against the tiles, the index, reachability
 ├── wayfinding.test.mjs      landmarks, corner signs, fingerposts, cyclists, wider streets, the overview
 ├── shops.test.mjs           shopfronts on street facades, not overlapping; "where am I" names the shop; toy scale
-└── styles.test.mjs          every style draws every kind (or falls back by category); the styles index
+├── styles.test.mjs          every style draws every kind (or falls back by category); the styles index
+└── placement.test.mjs       nothing in a building, on a road, in water or on another thing; kit by size and sport
 tools/capture.py             headless review screenshots, any style (window.__capture)
+tools/audit.mjs              placement audit (the same checks as placement.test.mjs, listed per kind)
 vendor/papercraft/           the papercraft kit (MIT, see its README for the local changes, including drive mode)
 scripts/
 ├── pack-world.mjs           ../../data/world → world/ (packed tiles + overview)

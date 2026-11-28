@@ -29,6 +29,7 @@ import { SITES, insideSite } from './sites/index.js';
 import { createKeepOut } from './plan/keep-out.js';
 import { createWayfinding } from './plan/wayfinding.js';
 import { describeTile, describeSite, describeLandmarks } from './world.js';
+import { onRoad } from './plan/street.js';
 import { rng } from './random.js';
 import { createColliders } from './colliders.js';
 import { createMover } from './movement.js';
@@ -103,13 +104,27 @@ export async function createGame({ loader, input = null } = {}) {
     thingsList = null;
   }
 
+  /**
+   * Who gives way when a tile arrives. A site's plan doesn't know the streets, so its loose things (trees, graves,
+   * benches) give way to the roads and buildings the tile has; and every solid thing gives way to the fingerposts and
+   * other things that are always there.
+   */
+  const SITE_FIXED = new Set(['wall', 'chapel', 'shed']);
+  function givesWay(t, tile) {
+    if (t.solid && always.some((a) => a.solid && Math.hypot(a.x - t.x, a.z - t.z) < (a.solid + t.solid) * 0.85)) return true;
+    if (t.tile === tile.key && !t.id.includes(`-${tile.key}-`) && !SITE_FIXED.has(t.kind)) {
+      return onRoad(tile.index, t.x, t.z) || tile.index.buildingAt(t.x, t.z, 0) !== null;
+    }
+    return false;
+  }
+
   /** New tiles: plan them, add their things (and the site things waiting for them), tell the style. */
   function attachTiles(tiles) {
     const added = [];
     for (const tile of tiles) {
       const { plan, things } = describeTile(tile, inRegion);
       tile.plan = plan;
-      tile.things = [...things, ...(waiting.get(tile.key) ?? [])];
+      tile.things = [...things, ...(waiting.get(tile.key) ?? [])].filter((t) => !givesWay(t, tile));
       added.push(...tile.things);
     }
     addThings(added);
