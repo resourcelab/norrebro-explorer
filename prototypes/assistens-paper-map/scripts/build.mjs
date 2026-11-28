@@ -56,7 +56,7 @@ cpSync(WORLD, join(DIST, 'world'), { recursive: true });
 // the offline file: the world as one object the page reads before the game starts (core/world/loaders.js inlineLoader)
 const readJson = (path) => JSON.parse(readFileSync(join(WORLD, path), 'utf8'));
 const manifest = readJson('manifest.json');
-const world = { manifest, overview: readJson('overview.json'), tiles: Object.fromEntries(manifest.tiles.map((k) => [k, readJson(`tiles/${k}.json`)])) };
+const world = { manifest, overview: readJson('overview.json'), addresses: readJson('addresses.json'), tiles: Object.fromEntries(manifest.tiles.map((k) => [k, readJson(`tiles/${k}.json`)])) };
 const offline = html.replace('<script type="module">', () => `<script>window.__WORLD__ = ${JSON.stringify(world).replace(/<\//g, '<\\/')};</script>\n<script type="module">`);
 writeFileSync(join(DIST, OFFLINE), offline);
 const kb = (n) => `${(n / 1024).toFixed(0)} KB`;

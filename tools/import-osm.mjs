@@ -7,6 +7,8 @@
  * Reads an OSM API / Overpass JSON export (nodes, ways, relations) and writes:
  *   outDir/manifest.json        origin, tile size, grid size, bounds, counts, source and licence
  *   outDir/streets.json         street name -> tiles it runs through (for routes and "which street is this")
+ *   outDir/addresses.json       street name -> [[house number, x, z], ...]: the address points (Danish addresses are
+ *                               mapped as nodes), so a game can find "Blågårdsgade 12" without asking a geocoder
  *   outDir/tiles/<i>_<j>.json   the features touching each tile, in metres from the origin
  *
  * Coordinates: metres, x east and z SOUTH of the origin (the north-west corner of the area), so z grows down the
@@ -275,6 +277,19 @@ const manifest = {
 };
 writeFileSync(join(outDir, 'manifest.json'), JSON.stringify(manifest, null, 2));
 writeFileSync(join(outDir, 'streets.json'), JSON.stringify(streetIndex, null, 1));
+
+// addresses: every node (or building) with a street and a house number, by street, numbers in house order
+const addresses = {};
+const addAddress = (t, [x, z]) => { if (t['addr:street'] && t['addr:housenumber']) (addresses[t['addr:street']] ??= []).push([t['addr:housenumber'], x, z]); };
+for (const nd of nodes.values()) if (nd.tags) addAddress(nd.tags, project(nd.lon, nd.lat));
+for (const way of ways.values()) if (way.tags?.['addr:housenumber'] && isClosed(way)) {
+  const pts = wayPoints(way);
+  addAddress(way.tags, [round1(pts.reduce((a, p) => a + p[0], 0) / pts.length), round1(pts.reduce((a, p) => a + p[1], 0) / pts.length)]);
+}
+const byNumber = new Intl.Collator('da', { numeric: true }).compare;
+const sortedAddresses = Object.fromEntries(Object.keys(addresses).sort(byNumber).map((k) => [k, addresses[k].sort((a, b) => byNumber(a[0], b[0]))]));
+writeFileSync(join(outDir, 'addresses.json'), JSON.stringify(sortedAddresses));
 console.log(`world: ${NX}x${NZ} tiles of ${TILE} m (${manifest.size.width} x ${manifest.size.depth} m), ${tiles.size} tiles written, ${(bytes / 1024).toFixed(0)} KB`);
 console.log('counts:', manifest.counts);
 console.log('streets named:', Object.keys(streetIndex).length);
+console.log('addresses:', Object.values(addresses).reduce((n, a) => n + a.length, 0), 'on', Object.keys(addresses).length, 'streets');

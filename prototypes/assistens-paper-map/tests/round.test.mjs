@@ -5,21 +5,18 @@ import assert from 'node:assert/strict';
 import { REGION } from '../src/config.js';
 import { createRound, PLACES, LEVELS } from '../src/core/round.js';
 import { onRoad } from '../src/core/plan/street.js';
-import { headlessGame, run } from './helpers.mjs';
+import { createAddressBook, parse } from '../src/core/address.js';
+import { headlessGame, run, fileLoader } from './helpers.mjs';
 
 const { game: whole } = await headlessGame({ pins: REGION });
 
-test('every place to live is on free pavement in the play area, and each can be walked to from the others', () => {
-  const blocks = (x, z) => whole.colliders.blocked(x, z);
-  for (const p of PLACES) {
-    assert.ok(p.x > REGION.x0 && p.x < REGION.x1 && p.z > REGION.z0 && p.z < REGION.z1, `${p.id} is in the play area`);
-    assert.equal(blocks(p.x, p.z), false, `${p.id} is free`);
-  }
-  // flood fill on a half-unit grid from the first place: every other place is reached
-  const S = 0.5;
-  const W = Math.ceil((REGION.x1 - REGION.x0) / S);
+// flood fill on a half-unit grid from the first place: what the walker can reach
+const blocks = (x, z) => whole.colliders.blocked(x, z);
+const S = 0.5;
+const W = Math.ceil((REGION.x1 - REGION.x0) / S);
+const cell = (x, z) => [Math.round((x - REGION.x0) / S), Math.round((z - REGION.z0) / S)];
+const reachable = (() => {
   const D = Math.ceil((REGION.z1 - REGION.z0) / S);
-  const cell = (x, z) => [Math.round((x - REGION.x0) / S), Math.round((z - REGION.z0) / S)];
   const seen = new Uint8Array(W * D);
   const [i0, j0] = cell(PLACES[0].x, PLACES[0].z);
   const stack = [[i0, j0]];
@@ -33,7 +30,49 @@ test('every place to live is on free pavement in the play area, and each can be 
       if (!blocks(REGION.x0 + u * S, REGION.z0 + v * S)) stack.push([u, v]);
     }
   }
-  for (const p of PLACES) { const [i, j] = cell(p.x, p.z); assert.ok(seen[j * W + i], `${p.id} can be walked to`); }
+  return (x, z) => { const [i, j] = cell(x, z); return Boolean(seen[j * W + i]); };
+})();
+
+test('every place to live is on free pavement in the play area, and each can be walked to from the others', () => {
+  for (const p of PLACES) {
+    assert.ok(p.x > REGION.x0 && p.x < REGION.x1 && p.z > REGION.z0 && p.z < REGION.z1, `${p.id} is in the play area`);
+    assert.equal(blocks(p.x, p.z), false, `${p.id} is free`);
+    assert.ok(reachable(p.x, p.z), `${p.id} can be walked to`);
+  }
+});
+
+test('addresses: typed the way children type, found on the map; streets beyond it are told apart', async () => {
+  assert.deepEqual(parse('Blågårdsgade 12B, 2200 København N'), { street: 'blaagaardsgade', number: '12b' });
+  assert.deepEqual(parse('fælledvej 9 2. th'), { street: 'faelledvej', number: '9' });
+  const book = createAddressBook(fileLoader(), REGION);
+  assert.ok((await book.size()) > 500, 'hundreds of addresses in the play area');
+  const a = await book.find('hans tavsens gade 4');
+  assert.equal(a.label, 'Hans Tavsens Gade 4');
+  assert.equal((await book.find('HANS TAVSENS GADE 4')).label, a.label);
+  assert.ok((await book.suggest('hans tav')).every((h) => h.street === 'Hans Tavsens Gade'));
+  assert.equal((await book.find('Hans Tavsens Gade 999')).street, 'Hans Tavsens Gade', 'an unknown number: the nearest one');
+  assert.deepEqual(await book.find('Blågårdsgade 1'), { outside: true }, 'east of the play area');
+  assert.equal(await book.find('Ingenvej 1'), null);
+});
+
+test('home at an address: on the pavement of its own street, free, and the walker can get there', async () => {
+  const { game } = await headlessGame();
+  const round = createRound(game);
+  const book = createAddressBook(fileLoader(), REGION);
+  for (const text of ['Hans Tavsens Gade 4', 'Jagtvej 99', 'Kapelvej 10', 'Nørrebrogade 66', 'Stengade 20', 'Prinsesse Charlottes Gade 30', 'Rantzausgade 20']) {
+    const a = await book.find(text);
+    assert.ok(a && !a.outside, `${text} is on the map`);
+    const home = await round.homeAt(a);
+    assert.ok(home, `${text}: a spot`);
+    assert.ok(Math.hypot(home.x - a.x, home.z - a.z) < 8, `${text}: near the door`);
+    assert.equal(game.colliders.blocked(home.x, home.z), false);
+    assert.equal(onRoad(game.map.store.index, home.x, home.z), false, `${text}: not on the road`);
+    assert.ok(reachable(home.x, home.z), `${text}: can be walked to`);
+  }
+  assert.equal(await round.homeAt(await book.find('Hellebækgade 6')), null, 'its street runs just beyond the map\'s edge');
+  const r = await round.start({ home: await round.homeAt(await book.find('Kapelvej 10')), level: 'small', seed: 4 });
+  assert.match(r.home.name, /^Kapelvej \d/);
+  assert.ok(PLACES.some((p) => p.id === r.from.id), 'starts at a place a child knows');
 });
 
 test('a walk starts at another known place, at the level\'s distance from home', async () => {

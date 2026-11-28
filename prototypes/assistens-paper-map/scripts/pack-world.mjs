@@ -17,6 +17,7 @@
  * Output, format "norrebro-explorer/packed@1" (metres from the area's north-west corner, x east, z south):
  *   world/manifest.json      origin, bbox, tile size, grid, margin, the tile list, source and licence
  *   world/overview.json      { bounds, streets, areas, buildings, landmarks }
+ *   world/addresses.json     { street: [[house number, x, z], ...] } (rounded to half metres), for "where do you live?"
  *   world/tiles/<i>_<j>.json { i, j, buildings, streets, areas, barriers, trees, props, pois }
  *                            areas carry `sport` for pitches; barriers are fences, hedges and walls (lines);
  *                            props: [x, z, kind] or, for ones mapped as a strip, [x, z, kind, angle, length]
@@ -195,6 +196,12 @@ writeFileSync(join(OUT, 'manifest.json'), JSON.stringify({
   source: manifest.source,
   licence: 'Map data © OpenStreetMap contributors, ODbL 1.0',
 }, null, 1));
+
+// the address points, read only when a player types where they live
+const half = (v) => Math.round(v * 2) / 2;
+const addressesIn = existsSync(join(SRC, 'addresses.json')) ? JSON.parse(readFileSync(join(SRC, 'addresses.json'), 'utf8')) : {};
+const addresses = Object.fromEntries(Object.entries(addressesIn).map(([street, list]) => [street, list.map(([nr, x, z]) => [nr, half(x), half(z)])]));
+writeFileSync(join(OUT, 'addresses.json'), JSON.stringify(addresses));
 
 const kb = (n) => `${Math.round(n / 1024)} KB`;
 console.log(`pack-world: ${tiles.length} tiles (${kb(bytes)}), overview ${kb(overviewText.length)} -> ${OUT.replace(root + '/', '')}/`);

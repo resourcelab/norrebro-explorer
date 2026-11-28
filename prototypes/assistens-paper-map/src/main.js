@@ -54,9 +54,9 @@ attachStreetSign(game);
 attachMinimap(game);
 if (!isCaptureMode()) attachZoomButton(game);
 
-// find your way home: pick where you live, start somewhere else, walk back (?free to just walk about)
+// find your way home: the corner button starts a round (type your address, start somewhere else, walk back)
 const round = createRound(game);
-attachRound(game, round);
+attachRound(game, round, loader);
 window.__round = round;
 if (new URLSearchParams(location.search).get('zoom') === 'map') game.toggleZoom('map', { instant: true }); // ?zoom=map
 

@@ -34,6 +34,20 @@ export function polylineDistance(x, z, pts) {
   return d;
 }
 
+/** The nearest point on a polyline to (x, z): { x, z, d }. */
+export function nearestOnPolyline(pts, x, z) {
+  let best = { x: pts[0][0], z: pts[0][1], d: Infinity };
+  for (let i = 0; i < pts.length - 1; i++) {
+    const [[ax, az], [bx, bz]] = [pts[i], pts[i + 1]];
+    const [dx, dz] = [bx - ax, bz - az];
+    const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz || 1)));
+    const [px, pz] = [ax + t * dx, az + t * dz];
+    const d = Math.hypot(px - x, pz - z);
+    if (d < best.d) best = { x: px, z: pz, d };
+  }
+  return best;
+}
+
 /** Where segments a-b and c-d cross, or null when they don't. */
 export function segmentIntersection(a, b, c, d) {
   const r = [b[0] - a[0], b[1] - a[1]];

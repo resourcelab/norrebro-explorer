@@ -1,6 +1,7 @@
 /**
  * Where the packed world comes from. The store (core/world/store.js) takes any object with three async functions that
- * return parsed JSON: { manifest(), overview(), tile(key) }.
+ * return parsed JSON: { manifest(), overview(), tile(key) }, and optionally addresses() (read only when a player types
+ * where they live: core/address.js).
  *
  * fetchLoader reads it over HTTP from a base URL (the hosted game: main.js). inlineLoader reads it from an object
  * baked into the page (the offline single-file build, scripts/build.mjs). Node's tests read files instead
@@ -16,6 +17,7 @@ export function fetchLoader(base, fetchFn = globalThis.fetch) {
     manifest: () => get('manifest.json'),
     overview: () => get('overview.json'),
     tile: (key) => get(`tiles/${key}.json`),
+    addresses: () => get('addresses.json'),
   };
 }
 
@@ -25,5 +27,6 @@ export function inlineLoader(world) {
     manifest: async () => world.manifest,
     overview: async () => world.overview,
     tile: async (key) => world.tiles[key],
+    addresses: async () => world.addresses ?? {},
   };
 }

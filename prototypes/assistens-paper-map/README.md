@@ -12,14 +12,21 @@ street you are on.
 - **Controls:** arrows / WASD walk · Shift run · Z (or the button) steps through the zooms: street, blocks, map ·
   click the minimap to switch too · drag to look around · click the scene to fold the world flat and back up.
 - **URL options:** `?style=flat` for the flat map style · `?mood=dusk` or `?mood=night` (papercraft) · `?zoom=map` opens
-  on the map view · `?free` skips the find-your-way-home game and just walks about · `?capture` hides the overlays
-  (for screenshots; `?capture&hud` keeps them).
+  on the map view · `?capture` hides the overlays (for screenshots; `?capture&hud` keeps them).
 
 ## Find your way home
 
-The game: you pick where you live from places a child knows (your school, a church, a park, a bakery, the big
-playground: `src/data/home-places.js`), the game drops you at another of them a walk away, and you walk home by reading
-the streets: street signs, shops, steeples, the playground you pass.
+The game opens as a free walk. The **🏠 Find vej hjem** button in the corner starts a round: type your address (or
+pick a place you know: your school, a church, a park, a bakery, the big playground, `src/data/home-places.js`),
+choose how hard, and the game drops you at one of those known places a walk away. You walk home by reading the
+streets: street signs, shops, steeples, the playground you pass. *Stop* on the card, or *Gå rundt · Explore* at the
+end, goes back to the free walk.
+
+- **Addresses:** the map knows the address points OpenStreetMap carries for the area (`world/addresses.json`, from
+  `tools/import-osm.mjs`), so there is no geocoder and nothing is sent anywhere. Suggestions appear as you type; å/ø/æ
+  or aa/oe/ae, any case, a postcode after a comma are all fine. Home is the pavement in front of the address, on its
+  own street. A street beyond the play area says so; a few addresses whose street runs just past the map's edge ask
+  for another (`src/core/address.js`, `homeAt` in `src/core/round.js`).
 
 - **Levels:** *Lille · Little* starts 100–275 m from home with the corner map (home on it), 3 peeks and 3 arrows;
   *Mellem · Middle* 225–500 m, no corner map, 3 peeks, 2 arrows; *Stor · Big* 450 m and more, no map, 1 peek, no
@@ -30,8 +37,8 @@ the streets: street signs, shops, steeples, the playground you pass.
 - **Crossing roads:** stepping onto a road away from a zebra crossing shows a nudge to cross at the crossing; a walk
   home without one earns the *Sikker fodgænger · Safe walker* badge.
 - **Home:** stars, the time, how far you walked against as the crow flies, and the route you took drawn on a map.
-- **Privacy:** home is a place in the game, never an address. The pick and the level are kept only in the browser
-  (`localStorage`), so the next visit starts a new walk straight away (*Skift · Change* to pick again).
+- **Privacy:** the address is kept only in the browser (`localStorage`), to fill the card in next time; *Glem min
+  adresse · Forget my address* clears it. It is never sent or stored anywhere else.
 - The game logic is `src/core/round.js` (headless, tested in `tests/round.test.mjs`); the screens are `src/ui/round.js`.
 
 ## Finding your way

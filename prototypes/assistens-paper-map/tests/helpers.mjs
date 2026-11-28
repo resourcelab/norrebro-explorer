@@ -13,6 +13,7 @@ export function fileLoader() {
     manifest: () => read('manifest.json'),
     overview: () => read('overview.json'),
     tile: (key) => { loader.reads++; return read(`tiles/${key}.json`); },
+    addresses: () => read('addresses.json'),
   };
   return loader;
 }

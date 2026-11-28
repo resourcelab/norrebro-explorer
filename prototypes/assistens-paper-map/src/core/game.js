@@ -186,6 +186,12 @@ export async function createGame({ loader, input = null } = {}) {
       return true;
     },
 
+    /** Load the tiles round (x, z) without moving the walker (to look at a spot before going there). */
+    async load(x, z) {
+      await stream(x, z);
+      await stream(x, z);
+    },
+
     /** Load the tiles round (x, z), then put the walker there. Resolves to true if he moved. */
     async goTo(x, z) {
       await stream(x, z);
